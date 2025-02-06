@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:metrowealth/features/auth/presentation/pages/login_page.dart';
+import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 
 class OnboardingScreen extends StatelessWidget {
@@ -41,7 +41,7 @@ class OnboardingScreen extends StatelessWidget {
                 onPressed: () {
                   Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
-                      builder: (context) => const LoginPage(),
+                      builder: (context) => const WelcomeScreen(),
                     ),
                   );
                 },

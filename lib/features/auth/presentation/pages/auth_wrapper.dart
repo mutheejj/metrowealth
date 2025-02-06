@@ -2,6 +2,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
 import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -20,12 +21,7 @@ class AuthWrapper extends StatelessWidget {
         }
         
         if (snapshot.hasData) {
-          // TODO: Return your home page
-          return const Scaffold(
-            body: Center(
-              child: Text('Home Page'),
-            ),
-          );
+          return const HomePage();
         }
 
         return const WelcomeScreen();

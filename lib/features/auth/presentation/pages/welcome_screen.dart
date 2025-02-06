@@ -44,7 +44,7 @@ class WelcomeScreen extends StatelessWidget {
               CustomButton(
                 text: 'Log In',
                 onPressed: () {
-                  Navigator.of(context).push(
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
                       builder: (context) => const LoginPage(),
                     ),
@@ -56,7 +56,7 @@ class WelcomeScreen extends StatelessWidget {
               CustomButton(
                 text: 'Sign Up',
                 onPressed: () {
-                  Navigator.of(context).push(
+                  Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
                       builder: (context) => const SignupPage(),
                     ),
@@ -68,7 +68,11 @@ class WelcomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
               TextButton(
                 onPressed: () {
-                  // TODO: Navigate to forgot password
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => const LoginPage(showForgotPassword: true),
+                    ),
+                  );
                 },
                 child: const Text(
                   'Forgot Password?',

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
-import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
+import 'package:metrowealth/features/auth/presentation/pages/onboarding_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -17,10 +17,10 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   void _navigateToNext() {
-    Future.delayed(const Duration(seconds: 5), () {
+    Future.delayed(const Duration(seconds: 3), () {
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const WelcomeScreen(),
+          builder: (context) => const OnboardingScreen(),
         ),
       );
     });

@@ -4,9 +4,12 @@ import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart
 import 'package:metrowealth/features/auth/presentation/pages/signup_page.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 
 class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+  const LoginPage({super.key, this.showForgotPassword = false});
+
+  final bool showForgotPassword;
 
   @override
   State<LoginPage> createState() => _LoginPageState();
@@ -21,10 +24,72 @@ class _LoginPageState extends State<LoginPage> {
   bool _isLoading = false;
 
   @override
+  void initState() {
+    super.initState();
+    if (widget.showForgotPassword) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showForgotPasswordDialog();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
+  }
+
+  void _showForgotPasswordDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Enter your email to receive a password reset link'),
+            const SizedBox(height: 16),
+            CustomTextField(
+              controller: _emailController,
+              label: 'Email',
+              hint: 'Enter your email',
+              keyboardType: TextInputType.emailAddress,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () async {
+              try {
+                await _authRepository.resetPassword(_emailController.text.trim());
+                if (mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Password reset email sent!'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+                }
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(e.toString()),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            },
+            child: const Text('Reset Password'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -166,7 +231,11 @@ class _LoginPageState extends State<LoginPage> {
                               backgroundColor: Colors.green,
                             ),
                           );
-                          // TODO: Navigate to home page
+                          Navigator.of(context).pushReplacement(
+                            MaterialPageRoute(
+                              builder: (context) => const HomePage(),
+                            ),
+                          );
                         }
                       } catch (e) {
                         ScaffoldMessenger.of(context).showSnackBar(
