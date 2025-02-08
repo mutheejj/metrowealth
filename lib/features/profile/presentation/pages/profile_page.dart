@@ -328,13 +328,17 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (confirmPassword == true) {
       try {
-        // First delete the auth account (this will reauthenticate)
-        await AuthRepository().deleteAccount(password: passwordController.text);
+        // First verify the password and get user credentials
+        await AuthRepository().verifyPassword(password: passwordController.text);
         
         // Then delete Firestore data
         await _databaseService.deleteUserAccount();
         
+        // Finally delete the auth account and navigate
+        await AuthRepository().deleteAccount(password: passwordController.text);
+
         if (mounted) {
+          // Navigate to login page
           Navigator.pushAndRemoveUntil(
             context,
             MaterialPageRoute(builder: (context) => const LoginPage()),

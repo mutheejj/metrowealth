@@ -186,4 +186,29 @@ class AuthRepository {
       throw 'Failed to change password';
     }
   }
+
+  // Add this method to verify password before deletion
+  Future<void> verifyPassword({required String password}) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user logged in';
+
+      // Verify credentials without actually reauthenticating
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'wrong-password':
+          throw 'Current password is incorrect';
+        default:
+          throw e.message ?? 'An error occurred while verifying password';
+      }
+    } catch (e) {
+      throw 'Failed to verify password';
+    }
+  }
 } 
