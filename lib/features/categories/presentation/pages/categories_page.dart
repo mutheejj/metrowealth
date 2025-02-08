@@ -4,6 +4,7 @@ import 'package:metrowealth/features/categories/data/models/category_model.dart'
 import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
+import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({Key? key}) : super(key: key);
@@ -326,12 +327,21 @@ class _CategoriesPageState extends State<CategoriesPage> {
   }
 
   void _onCategoryTap(CategoryModel category) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => CategoryDetailPage(category: category),
-      ),
-    );
+    if (category.name == 'Savings') {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const SavingsPage(),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CategoryDetailPage(category: category),
+        ),
+      );
+    }
   }
 
   void _onAddCategory() {
