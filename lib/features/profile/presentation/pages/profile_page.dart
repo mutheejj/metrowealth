@@ -65,6 +65,31 @@ class _ProfilePageState extends State<ProfilePage> {
     return MainNavigation(
       child: Scaffold(
         backgroundColor: AppColors.primary,
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: _currentSection != 'main' 
+            ? IconButton(
+                icon: const Icon(
+                  Icons.arrow_back_ios,
+                  color: Colors.white,
+                ),
+                onPressed: () {
+                  setState(() {
+                    _currentSection = 'main';
+                  });
+                },
+              )
+            : null,
+          title: Text(
+            _getTitle(),
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
         body: SafeArea(
           child: Column(
             children: [
@@ -74,21 +99,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    GestureDetector(
-                      onTap: () => Navigator.pop(context),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                      ),
-                    ),
-                    Text(
-                      _getTitle(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
                     const Icon(
                       Icons.notifications_none,
                       color: Colors.white,
