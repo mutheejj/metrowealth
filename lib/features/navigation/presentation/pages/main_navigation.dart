@@ -39,15 +39,11 @@ class _MainNavigationState extends State<MainNavigation> {
       body: widget.child,
       bottomNavigationBar: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
-              offset: const Offset(0, -5),
-            ),
-          ],
+        decoration: const BoxDecoration(
+          color: Color(0xFFF5F5F5),  // Light grey background
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(30),
+          ),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -58,17 +54,17 @@ class _MainNavigationState extends State<MainNavigation> {
               onTap: () => _onItemTapped(0),
             ),
             _buildNavItem(
-              icon: Icons.insert_chart_outlined,
+              icon: Icons.analytics_outlined,
               isSelected: _selectedIndex == 1,
               onTap: () => _onItemTapped(1),
             ),
             _buildNavItem(
-              icon: Icons.add_circle_outline,
+              icon: Icons.sync_alt,
               isSelected: _selectedIndex == 2,
               onTap: () => _onItemTapped(2),
             ),
             _buildNavItem(
-              icon: Icons.account_balance_wallet_outlined,
+              icon: Icons.layers_outlined,
               isSelected: _selectedIndex == 3,
               onTap: () => _onItemTapped(3),
             ),
@@ -91,14 +87,14 @@ class _MainNavigationState extends State<MainNavigation> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+          color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
-          color: isSelected ? AppColors.primary : Colors.grey,
+          color: isSelected ? Colors.white : Colors.grey,
           size: 24,
         ),
       ),
