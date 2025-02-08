@@ -6,6 +6,7 @@ import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/search_page.dart';
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({Key? key}) : super(key: key);
@@ -19,6 +20,56 @@ class _AnalysisPageState extends State<AnalysisPage> {
   String _selectedPeriod = 'Daily'; // Daily, Weekly, Monthly, Year
   int _selectedIndex = 3; // Set to 3 for analysis tab
   
+  late List<BarChartGroupData> _barGroups;
+  late FlTitlesData _titlesData;
+  final List<String> _periods = ['Daily', 'Weekly', 'Monthly', 'Year'];
+
+  @override
+  void initState() {
+    super.initState();
+    // Pre-calculate chart data
+    _initializeChartData();
+  }
+
+  void _initializeChartData() {
+    // Initialize bar groups
+    _barGroups = [
+      _generateBarGroup(0, 1000, 500),
+      _generateBarGroup(1, 1200, 700),
+      _generateBarGroup(2, 800, 400),
+      _generateBarGroup(3, 1500, 800),
+      _generateBarGroup(4, 1000, 600),
+      _generateBarGroup(5, 900, 300),
+      _generateBarGroup(6, 1100, 550),
+    ];
+
+    // Initialize titles data
+    _titlesData = FlTitlesData(
+      show: true,
+      bottomTitles: AxisTitles(
+        sideTitles: SideTitles(
+          showTitles: true,
+          getTitlesWidget: (value, meta) {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            return Text(
+              days[value.toInt() % 7],
+              style: const TextStyle(fontSize: 12),
+            );
+          },
+        ),
+      ),
+      leftTitles: AxisTitles(
+        sideTitles: SideTitles(showTitles: false),
+      ),
+      rightTitles: AxisTitles(
+        sideTitles: SideTitles(showTitles: false),
+      ),
+      topTitles: AxisTitles(
+        sideTitles: SideTitles(showTitles: false),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,15 +171,15 @@ class _AnalysisPageState extends State<AnalysisPage> {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: [
-                          _buildPeriodButton('Daily'),
-                          const SizedBox(width: 10),
-                          _buildPeriodButton('Weekly'),
-                          const SizedBox(width: 10),
-                          _buildPeriodButton('Monthly'),
-                          const SizedBox(width: 10),
-                          _buildPeriodButton('Year'),
-                        ],
+                        children: _periods.map((period) {
+                          final isSelected = _selectedPeriod == period;
+                          return Padding(
+                            padding: EdgeInsets.only(
+                              right: period != _periods.last ? 10 : 0,
+                            ),
+                            child: _buildPeriodButton(period),
+                          );
+                        }).toList(),
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -168,23 +219,61 @@ class _AnalysisPageState extends State<AnalysisPage> {
                                       color: Colors.blue.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: const Icon(
-                                      Icons.search,
-                                      color: Colors.blue,
-                                      size: 16,
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(builder: (context) => const SearchPage()),
+                                        );
+                                      },
+                                      child: const Icon(
+                                        Icons.search,
+                                        color: Colors.blue,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.all(4),
-                                    decoration: BoxDecoration(
-                                      color: Colors.blue.withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: const Icon(
-                                      Icons.calendar_today,
-                                      color: Colors.blue,
-                                      size: 16,
+                                  GestureDetector(
+                                    onTap: () async {
+                                      final DateTime now = DateTime.now();
+                                      final DateTime? picked = await showDatePicker(
+                                        context: context,
+                                        initialDate: now,
+                                        firstDate: DateTime(2020),
+                                        lastDate: DateTime(2025, 12, 31),
+                                        builder: (context, child) {
+                                          return Theme(
+                                            data: Theme.of(context).copyWith(
+                                              colorScheme: ColorScheme.light(
+                                                primary: AppColors.primary,
+                                                onPrimary: Colors.white,
+                                                surface: Colors.white,
+                                                onSurface: Colors.black,
+                                              ),
+                                            ),
+                                            child: child!,
+                                          );
+                                        },
+                                      );
+
+                                      if (picked != null) {
+                                        setState(() {
+                                          _selectedPeriod = 'Daily';
+                                        });
+                                      }
+                                    },
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        color: Colors.blue.withOpacity(0.2),
+                                        borderRadius: BorderRadius.circular(4),
+                                      ),
+                                      child: const Icon(
+                                        Icons.calendar_today,
+                                        color: Colors.blue,
+                                        size: 16,
+                                      ),
                                     ),
                                   ),
                                 ],
@@ -197,41 +286,10 @@ class _AnalysisPageState extends State<AnalysisPage> {
                             child: BarChart(
                               BarChartData(
                                 barTouchData: BarTouchData(enabled: false),
-                                titlesData: FlTitlesData(
-                                  show: true,
-                                  bottomTitles: AxisTitles(
-                                    sideTitles: SideTitles(
-                                      showTitles: true,
-                                      getTitlesWidget: (value, meta) {
-                                        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                                        return Text(
-                                          days[value.toInt() % 7],
-                                          style: const TextStyle(fontSize: 12),
-                                        );
-                                      },
-                                    ),
-                                  ),
-                                  leftTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  rightTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                  topTitles: AxisTitles(
-                                    sideTitles: SideTitles(showTitles: false),
-                                  ),
-                                ),
+                                titlesData: _titlesData,
                                 borderData: FlBorderData(show: false),
                                 gridData: FlGridData(show: false),
-                                barGroups: [
-                                  _generateBarGroup(0, 1000, 500),
-                                  _generateBarGroup(1, 1200, 700),
-                                  _generateBarGroup(2, 800, 400),
-                                  _generateBarGroup(3, 1500, 800),
-                                  _generateBarGroup(4, 1000, 600),
-                                  _generateBarGroup(5, 900, 300),
-                                  _generateBarGroup(6, 1100, 550),
-                                ],
+                                barGroups: _barGroups,
                               ),
                             ),
                           ),
