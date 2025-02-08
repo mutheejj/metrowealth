@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 // Import other pages
 
@@ -19,6 +20,13 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
+
+  final List<Widget> _pages = [
+    const HomePage(),
+    const CategoriesPage(),
+    const TransactionsPage(),
+    const ProfilePage(),
+  ];
 
   void _onItemTapped(int index) {
     setState(() {
@@ -43,6 +51,14 @@ class _MainNavigationState extends State<MainNavigation> {
         }
         break;
       case 2:
+        if (widget.child is! TransactionsPage) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const TransactionsPage()),
+          );
+        }
+        break;
+      case 3:
         if (widget.child is! ProfilePage) {
           Navigator.pushReplacement(
             context,
@@ -61,8 +77,10 @@ class _MainNavigationState extends State<MainNavigation> {
       _selectedIndex = 0;
     } else if (widget.child is CategoriesPage) {
       _selectedIndex = 1;
-    } else if (widget.child is ProfilePage) {
+    } else if (widget.child is TransactionsPage) {
       _selectedIndex = 2;
+    } else if (widget.child is ProfilePage) {
+      _selectedIndex = 3;
     }
   }
 
@@ -99,9 +117,14 @@ class _MainNavigationState extends State<MainNavigation> {
                   onTap: () => _onItemTapped(1),
                 ),
                 _buildNavItem(
-                  icon: Icons.person_outline,
+                  icon: Icons.receipt_long_outlined,
                   isSelected: _selectedIndex == 2,
                   onTap: () => _onItemTapped(2),
+                ),
+                _buildNavItem(
+                  icon: Icons.person_outline,
+                  isSelected: _selectedIndex == 3,
+                  onTap: () => _onItemTapped(3),
                 ),
               ],
             ),
