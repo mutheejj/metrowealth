@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:metrowealth/core/services/firebase_service.dart';
+import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
-import 'firebase_options.dart';
 import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await FirebaseService.initialize();
   runApp(const MyApp());
 }
 
@@ -25,20 +23,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFB71C1C)),
         useMaterial3: true,
       ),
-      home: StreamBuilder<User?>(
-        stream: FirebaseAuth.instance.authStateChanges(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const SplashScreen();
-          }
-          
-          if (snapshot.hasData) {
-            return const MainNavigation();
-          }
-          
-          return const SplashScreen();
-        },
-      ),
+      home: const SplashScreen(),
     );
   }
 }

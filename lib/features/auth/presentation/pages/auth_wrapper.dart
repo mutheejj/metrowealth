@@ -1,7 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
-import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
+import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 
 class AuthWrapper extends StatelessWidget {
@@ -24,7 +24,7 @@ class AuthWrapper extends StatelessWidget {
           return const HomePage();
         }
 
-        return const WelcomeScreen();
+        return const SplashScreen();
       },
     );
   }
