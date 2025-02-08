@@ -4,6 +4,7 @@ import 'package:metrowealth/core/services/database_service.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
+import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 
 import '../widgets/edit_profile_content.dart';
 import '../widgets/help_content.dart';
@@ -58,55 +59,57 @@ class _ProfilePageState extends State<ProfilePage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // App Bar
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  GestureDetector(
-                    onTap: () => Navigator.pop(context),
-                    child: const Icon(
-                      Icons.arrow_back,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    _getTitle(),
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const Icon(
-                    Icons.notifications_none,
-                    color: Colors.white,
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            Expanded(
-              child: Container(
-                width: double.infinity,
+    return MainNavigation(
+      child: Scaffold(
+        backgroundColor: AppColors.primary,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // App Bar
+              Padding(
                 padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF5F5F5),
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    GestureDetector(
+                      onTap: () => Navigator.pop(context),
+                      child: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      _getTitle(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const Icon(
+                      Icons.notifications_none,
+                      color: Colors.white,
+                    ),
+                  ],
                 ),
-                child: _buildCurrentSection(),
               ),
-            ),
-          ],
+
+              // Content
+              Expanded(
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFF5F5F5),
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                  child: _buildCurrentSection(),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -133,64 +136,66 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildMainProfile() {
-    return Column(
-      children: [
-        // Profile Picture and Name
-        const CircleAvatar(
-          radius: 50,
-          backgroundImage: AssetImage('assets/images/profile.png'),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          _currentUser?.fullName ?? 'John Smith',
-          style: const TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          // Profile Picture and Name
+          const CircleAvatar(
+            radius: 50,
+            backgroundImage: AssetImage('assets/images/profile.png'),
           ),
-        ),
-        Text(
-          'ID: ${_currentUser?.id ?? '25030024'}',
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
+          const SizedBox(height: 16),
+          Text(
+            _currentUser?.fullName ?? 'John Smith',
+            style: const TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
-        const SizedBox(height: 30),
+          Text(
+            'ID: ${_currentUser?.id ?? '25030024'}',
+            style: const TextStyle(
+              color: Colors.grey,
+              fontSize: 14,
+            ),
+          ),
+          const SizedBox(height: 30),
 
-        // Menu Items
-        _buildProfileMenuItem(
-          icon: Icons.person_outline,
-          title: 'Edit Profile',
-          color: Colors.blue,
-          onTap: () => setState(() => _currentSection = 'edit'),
-        ),
-        _buildProfileMenuItem(
-          icon: Icons.security,
-          title: 'Security',
-          color: Colors.blue,
-          onTap: () => setState(() => _currentSection = 'security'),
-        ),
-        _buildProfileMenuItem(
-          icon: Icons.settings,
-          title: 'Setting',
-          color: Colors.blue,
-          onTap: () => setState(() => _currentSection = 'settings'),
-        ),
-        _buildProfileMenuItem(
-          icon: Icons.help_outline,
-          title: 'Help',
-          color: Colors.blue,
-          onTap: () => setState(() => _currentSection = 'help'),
-        ),
-        _buildProfileMenuItem(
-          icon: Icons.logout,
-          title: 'Logout',
-          color: Colors.blue,
-          onTap: () async {
-            await AuthRepository().signOut();
-          },
-        ),
-      ],
+          // Menu Items
+          _buildProfileMenuItem(
+            icon: Icons.person_outline,
+            title: 'Edit Profile',
+            color: Colors.blue,
+            onTap: () => setState(() => _currentSection = 'edit'),
+          ),
+          _buildProfileMenuItem(
+            icon: Icons.security,
+            title: 'Security',
+            color: Colors.blue,
+            onTap: () => setState(() => _currentSection = 'security'),
+          ),
+          _buildProfileMenuItem(
+            icon: Icons.settings,
+            title: 'Setting',
+            color: Colors.blue,
+            onTap: () => setState(() => _currentSection = 'settings'),
+          ),
+          _buildProfileMenuItem(
+            icon: Icons.help_outline,
+            title: 'Help',
+            color: Colors.blue,
+            onTap: () => setState(() => _currentSection = 'help'),
+          ),
+          _buildProfileMenuItem(
+            icon: Icons.logout,
+            title: 'Logout',
+            color: Colors.blue,
+            onTap: () async {
+              await AuthRepository().signOut();
+            },
+          ),
+        ],
+      ),
     );
   }
 

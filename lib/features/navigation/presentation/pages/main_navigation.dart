@@ -70,10 +70,20 @@ class _MainNavigationState extends State<MainNavigation> {
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
-      if (index == 4) {
+      if (index == 4 && widget.child is! ProfilePage) {
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
+          MaterialPageRoute(
+            builder: (context) => const ProfilePage(),
+          ),
+        );
+      } else if (index == 0 && widget.child is! HomePage) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const HomePage(),
+          ),
+          (route) => false,
         );
       }
     });
