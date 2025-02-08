@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:metrowealth/core/services/database_service.dart';
+import 'package:metrowealth/features/auth/data/models/user_model.dart';
 
 import '../widgets/edit_profile_content.dart';
 import '../widgets/help_content.dart';
@@ -14,10 +16,46 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _currentSection = 'main'; // 'main', 'edit', 'security', 'settings', 'help'
+  String _currentSection = 'main';
+  final DatabaseService _databaseService = DatabaseService();
+  UserModel? _currentUser;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserProfile();
+  }
+
+  Future<void> _loadUserProfile() async {
+    try {
+      setState(() => _isLoading = true);
+      final userId = _databaseService.currentUserId;
+      if (userId != null) {
+        final user = await _databaseService.getUserProfile(userId);
+        setState(() => _currentUser = user);
+      }
+    } catch (e) {
+      _showErrorSnackBar('Error loading profile');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       backgroundColor: const Color(0xFFB71C1C),
       appBar: AppBar(
@@ -33,38 +71,48 @@ class _ProfilePageState extends State<ProfilePage> {
             : null,
         title: Text(
           _getTitle(),
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(color: Colors.white),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () {
-              // Handle notifications
-            },
-          ),
-        ],
       ),
-      body: Column(
+      body: _buildCurrentSection(),
+    );
+  }
+
+  Widget _buildCurrentSection() {
+    switch (_currentSection) {
+      case 'edit':
+        return EditProfileContent(
+          user: _currentUser,
+          onSave: _handleProfileUpdate,
+        );
+      case 'security':
+        return SecurityContent(onSave: () {
+          setState(() => _currentSection = 'main');
+        });
+      case 'settings':
+        return const SettingsContent();
+      case 'help':
+        return const HelpContent();
+      default:
+        return _buildMainProfile();
+    }
+  }
+
+  Widget _buildMainProfile() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(30),
+          topRight: Radius.circular(30),
+        ),
+      ),
+      child: ListView(
+        padding: const EdgeInsets.all(20),
         children: [
-          const SizedBox(height: 20),
-          if (_currentSection == 'main') _buildProfileHeader(),
+          _buildProfileHeader(),
           const SizedBox(height: 30),
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24),
-                  topRight: Radius.circular(24),
-                ),
-              ),
-              child: _buildCurrentSection(),
-            ),
-          ),
+          _buildProfileMenu(),
         ],
       ),
     );
@@ -73,96 +121,52 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildProfileHeader() {
     return Column(
       children: [
-        Container(
-          width: 100,
-          height: 100,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white, width: 2),
-            image: const DecorationImage(
-              image: AssetImage('assets/images/profile.png'),
-              fit: BoxFit.cover,
-            ),
-          ),
+        const CircleAvatar(
+          radius: 50,
+          backgroundColor: Color(0xFFB71C1C),
+          child: Icon(Icons.person, size: 50, color: Colors.white),
         ),
         const SizedBox(height: 16),
-        const Text(
-          'John Smith',
-          style: TextStyle(
-            color: Colors.white,
+        Text(
+          _currentUser?.fullName ?? 'User',
+          style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
-        const Text(
-          'ID: 25030024',
+        Text(
+          _currentUser?.email ?? '',
           style: TextStyle(
-            color: Colors.white70,
-            fontSize: 14,
+            color: Colors.grey[600],
+            fontSize: 16,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCurrentSection() {
-    switch (_currentSection) {
-      case 'edit':
-        return EditProfileContent(
-          onSave: () {
-            setState(() => _currentSection = 'main');
-          },
-        );
-      case 'security':
-        return SecurityContent(
-          onSave: () {
-            setState(() => _currentSection = 'main');
-          },
-        );
-      case 'settings':
-        return const SettingsContent();
-      case 'help':
-        return const HelpContent();
-      default:
-        return _buildMainMenu();
-    }
-  }
-
-  Widget _buildMainMenu() {
-    return ListView(
-      padding: const EdgeInsets.all(20),
+  Widget _buildProfileMenu() {
+    return Column(
       children: [
         _buildMenuItem(
-          icon: Icons.person_outline,
+          icon: Icons.edit,
           title: 'Edit Profile',
-          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'edit'),
         ),
         _buildMenuItem(
           icon: Icons.security,
           title: 'Security',
-          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'security'),
         ),
         _buildMenuItem(
           icon: Icons.settings,
-          title: 'Setting',
-          color: Colors.blue,
+          title: 'Settings',
           onTap: () => setState(() => _currentSection = 'settings'),
         ),
         _buildMenuItem(
           icon: Icons.help_outline,
-          title: 'Help',
-          color: Colors.blue,
+          title: 'Help & Support',
           onTap: () => setState(() => _currentSection = 'help'),
-        ),
-        _buildMenuItem(
-          icon: Icons.logout,
-          title: 'Logout',
-          color: Colors.blue,
-          onTap: () {
-            // Handle logout
-          },
         ),
       ],
     );
@@ -171,49 +175,38 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget _buildMenuItem({
     required IconData icon,
     required String title,
-    required Color color,
     required VoidCallback onTap,
   }) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
+    return Card(
+      elevation: 0,
+      color: Colors.grey[100],
+      margin: const EdgeInsets.only(bottom: 10),
+      child: ListTile(
+        leading: Icon(icon, color: const Color(0xFFB71C1C)),
+        title: Text(title),
+        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(icon, color: color),
-              ),
-              const SizedBox(width: 16),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              const Spacer(),
-              const Icon(
-                Icons.arrow_forward_ios,
-                size: 16,
-                color: Colors.grey,
-              ),
-            ],
-          ),
-        ),
       ),
     );
+  }
+
+  Future<void> _handleProfileUpdate(UserModel updatedUser) async {
+    try {
+      await _databaseService.createUserProfile(updatedUser);
+      setState(() {
+        _currentUser = updatedUser;
+        _currentSection = 'main';
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profile updated successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        _showErrorSnackBar('Error updating profile');
+      }
+    }
   }
 
   String _getTitle() {

@@ -4,6 +4,7 @@ import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart
 import 'package:metrowealth/features/auth/presentation/pages/login_page.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -14,6 +15,7 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
+  final _fullNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
@@ -24,6 +26,7 @@ class _SignupPageState extends State<SignupPage> {
 
   @override
   void dispose() {
+    _fullNameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -31,45 +34,43 @@ class _SignupPageState extends State<SignupPage> {
   }
 
   Future<void> _handleSignUp() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => _isLoading = true);
-
-    try {
-      debugPrint('Attempting to sign up with email: ${_emailController.text}');
-      
-      await _authRepository.signUp(
-        email: _emailController.text,
-        password: _passwordController.text,
-      );
-
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Account created successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Navigate to login page
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    } catch (e) {
-      debugPrint('Error during sign up: $e');
-      
-      if (!mounted) return;
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(e.toString()),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
+    if (_formKey.currentState!.validate()) {
+      setState(() => _isLoading = true);
+      try {
+        await _authRepository.signUp(
+          email: _emailController.text,
+          password: _passwordController.text,
+          fullName: _fullNameController.text,
+        );
+        
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const HomePage()),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          String errorMessage = 'An error occurred during sign up';
+          if (e.toString().contains('permission-denied')) {
+            errorMessage = 'Error creating profile. Please try again.';
+          } else if (e.toString().contains('email-already-in-use')) {
+            errorMessage = 'This email is already registered';
+          } else if (e.toString().contains('weak-password')) {
+            errorMessage = 'Password is too weak';
+          }
+          
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(errorMessage),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isLoading = false);
+        }
       }
     }
   }
@@ -118,6 +119,18 @@ class _SignupPageState extends State<SignupPage> {
                   ),
                 ),
                 const SizedBox(height: 32),
+                CustomTextField(
+                  controller: _fullNameController,
+                  label: 'Full Name',
+                  hint: 'Enter your full name',
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter your full name';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 24),
                 CustomTextField(
                   label: 'Email',
                   hint: 'Enter your email',
