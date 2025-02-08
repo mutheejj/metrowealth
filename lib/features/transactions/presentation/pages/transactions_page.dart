@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({Key? key}) : super(key: key);
@@ -24,9 +25,23 @@ class _TransactionsPageState extends State<TransactionsPage> {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Transaction',
-          style: TextStyle(color: Colors.white),
+        title: Row(
+          children: [
+            const Text(
+              'Transaction',
+              style: TextStyle(color: Colors.white),
+            ),
+            const Spacer(),
+            IconButton(
+              icon: const Icon(Icons.analytics_outlined, color: Colors.white),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                );
+              },
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -423,8 +438,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 onTap: () {}, // Already on transactions page
               ),
               _buildNavItem(
-                icon: Icons.person_outline,
+                icon: Icons.analytics_outlined,
                 isSelected: _selectedIndex == 3,
+                onTap: () {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                  );
+                },
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline,
+                isSelected: _selectedIndex == 4,
                 onTap: () {
                   Navigator.pushReplacement(
                     context,

@@ -3,6 +3,7 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 // Import other pages
 
@@ -25,6 +26,7 @@ class _MainNavigationState extends State<MainNavigation> {
     const HomePage(),
     const CategoriesPage(),
     const TransactionsPage(),
+    const AnalysisPage(),
     const ProfilePage(),
   ];
 
@@ -59,6 +61,14 @@ class _MainNavigationState extends State<MainNavigation> {
         }
         break;
       case 3:
+        if (widget.child is! AnalysisPage) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => const AnalysisPage()),
+          );
+        }
+        break;
+      case 4:
         if (widget.child is! ProfilePage) {
           Navigator.pushReplacement(
             context,
@@ -79,8 +89,10 @@ class _MainNavigationState extends State<MainNavigation> {
       _selectedIndex = 1;
     } else if (widget.child is TransactionsPage) {
       _selectedIndex = 2;
-    } else if (widget.child is ProfilePage) {
+    } else if (widget.child is AnalysisPage) {
       _selectedIndex = 3;
+    } else if (widget.child is ProfilePage) {
+      _selectedIndex = 4;
     }
   }
 
@@ -122,9 +134,14 @@ class _MainNavigationState extends State<MainNavigation> {
                   onTap: () => _onItemTapped(2),
                 ),
                 _buildNavItem(
-                  icon: Icons.person_outline,
+                  icon: Icons.analytics_outlined,
                   isSelected: _selectedIndex == 3,
                   onTap: () => _onItemTapped(3),
+                ),
+                _buildNavItem(
+                  icon: Icons.person_outline,
+                  isSelected: _selectedIndex == 4,
+                  onTap: () => _onItemTapped(4),
                 ),
               ],
             ),
