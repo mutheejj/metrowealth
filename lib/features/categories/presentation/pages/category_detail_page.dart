@@ -19,39 +19,28 @@ class CategoryDetailPage extends StatefulWidget {
 
 class _CategoryDetailPageState extends State<CategoryDetailPage> {
   final currencyFormat = NumberFormat.currency(symbol: '\$');
+  List<ExpenseItem> _expenses = [];  // Initialize directly
 
-  // Mock transaction data
-  final List<ExpenseItem> _expenses = [
-    ExpenseItem(
-      title: 'Dinner',
-      amount: 26.00,
-      dateTime: DateTime(2024, 4, 30, 18, 27),
-    ),
-    ExpenseItem(
-      title: 'Delivery Pizza',
-      amount: 18.35,
-      dateTime: DateTime(2024, 4, 24, 15, 00),
-    ),
-    ExpenseItem(
-      title: 'Lunch',
-      amount: 15.40,
-      dateTime: DateTime(2024, 4, 15, 12, 30),
-    ),
-    ExpenseItem(
-      title: 'Brunch',
-      amount: 12.13,
-      dateTime: DateTime(2024, 4, 8, 9, 30),
-    ),
-    ExpenseItem(
-      title: 'Dinner',
-      amount: 27.20,
-      dateTime: DateTime(2024, 3, 31, 20, 50),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _expenses = widget.category.expenses.toList();
+  }
+
+  @override
+  void didUpdateWidget(CategoryDetailPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.category != widget.category) {
+      _expenses = widget.category.expenses.toList();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final progress = widget.category.spent / widget.category.budget;
+    // Add null check and default value to prevent NaN
+    final progress = widget.category.budget == 0 ? 
+        0.0 : 
+        widget.category.spent / widget.category.budget;
 
     return Scaffold(
       backgroundColor: AppColors.primary,
@@ -185,39 +174,50 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
                 child: Column(
                   children: [
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: _expenses.length,
-                        itemBuilder: (context, index) {
-                          final expense = _expenses[index];
-                          final bool isNewMonth = index == 0 || 
-                              _expenses[index].dateTime.month != _expenses[index - 1].dateTime.month;
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (isNewMonth) ...[
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  child: Text(
-                                    DateFormat('MMMM').format(expense.dateTime),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
+                      child: _expenses.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No expenses yet',
+                                style: TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 16,
                                 ),
-                              ],
-                              _buildExpenseItem(expense),
-                            ],
-                          );
-                        },
-                      ),
+                              ),
+                            )
+                          : ListView.builder(
+                              itemCount: _expenses.length,
+                              itemBuilder: (context, index) {
+                                final expense = _expenses[index];
+                                final bool isNewMonth = index == 0 || 
+                                    _expenses[index].dateTime.month != 
+                                    _expenses[index - 1].dateTime.month;
+
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    if (isNewMonth) ...[
+                                      Padding(
+                                        padding: const EdgeInsets.symmetric(vertical: 10),
+                                        child: Text(
+                                          DateFormat('MMMM').format(expense.dateTime),
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                    _buildExpenseItem(expense),
+                                  ],
+                                );
+                              },
+                            ),
                     ),
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: () => _showAddExpenseDialog(context),
+                        onPressed: _showAddExpenseDialog,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -297,7 +297,7 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
     );
   }
 
-  void _showAddExpenseDialog(BuildContext context) {
+  void _showAddExpenseDialog() {
     Navigator.push<ExpenseItem>(
       context,
       MaterialPageRoute(
@@ -307,9 +307,19 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       ),
     ).then((newExpense) {
       if (newExpense != null) {
+        final updatedSpent = widget.category.spent + newExpense.amount;
+        final updatedExpenses = [..._expenses, newExpense];
+        
+        final updatedCategory = widget.category.copyWith(
+          spent: updatedSpent,
+          expenses: updatedExpenses,
+        );
+        
         setState(() {
-          _expenses.insert(0, newExpense);
+          _expenses = updatedExpenses;
         });
+        
+        Navigator.pop(context, updatedCategory);
       }
     });
   }

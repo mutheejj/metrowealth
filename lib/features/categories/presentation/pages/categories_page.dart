@@ -5,6 +5,7 @@ import 'package:metrowealth/features/navigation/presentation/pages/main_navigati
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
+import 'package:metrowealth/features/categories/presentation/widgets/add_category_dialog.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'food',
       budget: 20000.0,
       spent: 7783.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '2',
@@ -29,6 +31,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'transport',
       budget: 10000.0,
       spent: 5123.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '3',
@@ -36,6 +39,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'medicine',
       budget: 5000.0,
       spent: 2500.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '4',
@@ -43,6 +47,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'groceries',
       budget: 15000.0,
       spent: 8900.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '5',
@@ -50,6 +55,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'rent',
       budget: 50000.0,
       spent: 50000.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '6',
@@ -57,6 +63,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'gifts',
       budget: 5000.0,
       spent: 2100.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '7',
@@ -64,6 +71,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'savings',
       budget: 30000.0,
       spent: 30000.0,
+      expenses: [],
     ),
     CategoryModel(
       id: '8',
@@ -71,6 +79,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       icon: 'entertainment',
       budget: 8000.0,
       spent: 4500.0,
+      expenses: [],
     ),
   ];
 
@@ -238,6 +247,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
   Widget _buildCategoryCard(CategoryModel category) {
     return InkWell(
       onTap: () => _onCategoryTap(category),
+      onLongPress: () => _showDeleteCategoryDialog(category),
       child: Container(
         decoration: BoxDecoration(
           color: category.name == 'Food' 
@@ -335,16 +345,86 @@ class _CategoriesPageState extends State<CategoriesPage> {
         ),
       );
     } else {
-      Navigator.push(
+      Navigator.push<CategoryModel>(
         context,
         MaterialPageRoute(
           builder: (context) => CategoryDetailPage(category: category),
         ),
-      );
+      ).then((updatedCategory) {
+        if (updatedCategory != null) {
+          setState(() {
+            final index = _categories.indexWhere((c) => c.id == updatedCategory.id);
+            if (index != -1) {
+              _categories[index] = updatedCategory;
+            }
+          });
+        }
+      });
     }
   }
 
   void _onAddCategory() {
-    // TODO: Show dialog to add new category
+    showDialog<CategoryModel>(
+      context: context,
+      builder: (BuildContext context) => const AddCategoryDialog(),
+    ).then((CategoryModel? newCategory) {
+      if (newCategory != null) {
+        setState(() {
+          _categories.add(newCategory);
+        });
+      }
+    });
+  }
+
+  void _showDeleteCategoryDialog(CategoryModel category) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: const Text(
+            'Delete Category',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to delete ${category.name}?',
+            style: const TextStyle(fontSize: 16),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  color: Colors.grey[600],
+                  fontSize: 16,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _categories.removeWhere((c) => c.id == category.id);
+                });
+                Navigator.pop(context);
+              },
+              child: const Text(
+                'Delete',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 } 

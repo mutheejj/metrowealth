@@ -3,6 +3,7 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_goal_detail_page.dart';
+import 'package:metrowealth/features/savings/presentation/pages/add_savings_goal_page.dart';
 
 class SavingsPage extends StatefulWidget {
   const SavingsPage({Key? key}) : super(key: key);
@@ -218,7 +219,7 @@ class _SavingsPageState extends State<SavingsPage> {
 
   Widget _buildAddMoreCard() {
     return InkWell(
-      onTap: _onAddSavingsGoal,
+      onTap: _onAddMore,
       child: Container(
         decoration: BoxDecoration(
           color: AppColors.primary.withOpacity(0.1),
@@ -257,7 +258,22 @@ class _SavingsPageState extends State<SavingsPage> {
       case 'car':
         return Icons.directions_car_outlined;
       case 'wedding':
-        return Icons.favorite_outline;
+        return Icons.favorite_outlined;
+      case 'education':
+        return Icons.school_outlined;
+      case 'business':
+        return Icons.business_outlined;
+      case 'gadget':
+        return Icons.phone_android_outlined;
+      case 'gift':
+        return Icons.card_giftcard_outlined;
+      case 'health':
+        return Icons.medical_services_outlined;
+      case 'pet':
+        return Icons.pets_outlined;
+      case 'shopping':
+        return Icons.shopping_bag_outlined;
+      case 'savings':
       default:
         return Icons.savings_outlined;
     }
@@ -272,7 +288,18 @@ class _SavingsPageState extends State<SavingsPage> {
     );
   }
 
-  void _onAddSavingsGoal() {
-    // TODO: Show dialog to add new savings goal
+  void _onAddMore() {
+    Navigator.push<SavingsGoalModel>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => const AddSavingsGoalPage(),
+      ),
+    ).then((newGoal) {
+      if (newGoal != null) {
+        setState(() {
+          _savingsGoals.add(newGoal);
+        });
+      }
+    });
   }
 } 
