@@ -19,64 +19,64 @@ class MainNavigation extends StatefulWidget {
 class _MainNavigationState extends State<MainNavigation> {
   int _selectedIndex = 0;
 
-  final List<Widget> _pages = [
-    const HomePage(),
-    const Center(child: Text('Analytics')), // Replace with actual pages
-    const Center(child: Text('Transactions')),
-    const Center(child: Text('Wallet')),
-    const ProfilePage(),
-  ];
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: widget.child,
       bottomNavigationBar: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: const BoxDecoration(
-          color: Color(0xFFF5F5F5),  // Light grey background
+          color: Color(0xFFF5F5F5),
           borderRadius: BorderRadius.vertical(
             top: Radius.circular(30),
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildNavItem(
-              icon: Icons.home_outlined,
-              isSelected: _selectedIndex == 0,
-              onTap: () => _onItemTapped(0),
-            ),
-            _buildNavItem(
-              icon: Icons.analytics_outlined,
-              isSelected: _selectedIndex == 1,
-              onTap: () => _onItemTapped(1),
-            ),
-            _buildNavItem(
-              icon: Icons.sync_alt,
-              isSelected: _selectedIndex == 2,
-              onTap: () => _onItemTapped(2),
-            ),
-            _buildNavItem(
-              icon: Icons.layers_outlined,
-              isSelected: _selectedIndex == 3,
-              onTap: () => _onItemTapped(3),
-            ),
-            _buildNavItem(
-              icon: Icons.person_outline,
-              isSelected: _selectedIndex == 4,
-              onTap: () => _onItemTapped(4),
-            ),
-          ],
+        child: SafeArea(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              _buildNavItem(
+                icon: Icons.home_outlined,
+                isSelected: _selectedIndex == 0,
+                onTap: () => _onItemTapped(0),
+              ),
+              _buildNavItem(
+                icon: Icons.analytics_outlined,
+                isSelected: _selectedIndex == 1,
+                onTap: () => _onItemTapped(1),
+              ),
+              _buildNavItem(
+                icon: Icons.sync_alt,
+                isSelected: _selectedIndex == 2,
+                onTap: () => _onItemTapped(2),
+              ),
+              _buildNavItem(
+                icon: Icons.layers_outlined,
+                isSelected: _selectedIndex == 3,
+                onTap: () => _onItemTapped(3),
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline,
+                isSelected: _selectedIndex == 4,
+                onTap: () => _onItemTapped(4),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  void _onItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+      if (index == 4) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+      }
+    });
   }
 
   Widget _buildNavItem({
@@ -87,14 +87,14 @@ class _MainNavigationState extends State<MainNavigation> {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: isSelected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(
           icon,
-          color: isSelected ? Colors.white : Colors.grey,
+          color: isSelected ? Colors.white : const Color(0xFF757575),
           size: 24,
         ),
       ),

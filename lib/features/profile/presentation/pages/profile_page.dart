@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:metrowealth/core/services/database_service.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
+import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
 
 import '../widgets/edit_profile_content.dart';
 import '../widgets/help_content.dart';
@@ -57,24 +59,56 @@ class _ProfilePageState extends State<ProfilePage> {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFB71C1C),
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFB71C1C),
-        elevation: 0,
-        leading: _currentSection != 'main'
-            ? IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () {
-                  setState(() => _currentSection = 'main');
-                },
-              )
-            : null,
-        title: Text(
-          _getTitle(),
-          style: const TextStyle(color: Colors.white),
+      backgroundColor: AppColors.primary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // App Bar
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  GestureDetector(
+                    onTap: () => Navigator.pop(context),
+                    child: const Icon(
+                      Icons.arrow_back,
+                      color: Colors.white,
+                    ),
+                  ),
+                  Text(
+                    _getTitle(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const Icon(
+                    Icons.notifications_none,
+                    color: Colors.white,
+                  ),
+                ],
+              ),
+            ),
+
+            // Content
+            Expanded(
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF5F5F5),
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(30),
+                  ),
+                ),
+                child: _buildCurrentSection(),
+              ),
+            ),
+          ],
         ),
       ),
-      body: _buildCurrentSection(),
     );
   }
 
@@ -99,102 +133,117 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildMainProfile() {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(30),
-          topRight: Radius.circular(30),
-        ),
-      ),
-      child: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          _buildProfileHeader(),
-          const SizedBox(height: 30),
-          _buildProfileMenu(),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildProfileHeader() {
     return Column(
       children: [
+        // Profile Picture and Name
         const CircleAvatar(
           radius: 50,
-          backgroundColor: Color(0xFFB71C1C),
-          child: Icon(Icons.person, size: 50, color: Colors.white),
+          backgroundImage: AssetImage('assets/images/profile.png'),
         ),
         const SizedBox(height: 16),
         Text(
-          _currentUser?.fullName ?? 'User',
+          _currentUser?.fullName ?? 'John Smith',
           style: const TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
         ),
         Text(
-          _currentUser?.email ?? '',
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 16,
+          'ID: ${_currentUser?.id ?? '25030024'}',
+          style: const TextStyle(
+            color: Colors.grey,
+            fontSize: 14,
           ),
         ),
-      ],
-    );
-  }
+        const SizedBox(height: 30),
 
-  Widget _buildProfileMenu() {
-    return Column(
-      children: [
-        _buildMenuItem(
-          icon: Icons.edit,
+        // Menu Items
+        _buildProfileMenuItem(
+          icon: Icons.person_outline,
           title: 'Edit Profile',
+          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'edit'),
         ),
-        _buildMenuItem(
+        _buildProfileMenuItem(
           icon: Icons.security,
           title: 'Security',
+          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'security'),
         ),
-        _buildMenuItem(
+        _buildProfileMenuItem(
           icon: Icons.settings,
-          title: 'Settings',
+          title: 'Setting',
+          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'settings'),
         ),
-        _buildMenuItem(
+        _buildProfileMenuItem(
           icon: Icons.help_outline,
-          title: 'Help & Support',
+          title: 'Help',
+          color: Colors.blue,
           onTap: () => setState(() => _currentSection = 'help'),
+        ),
+        _buildProfileMenuItem(
+          icon: Icons.logout,
+          title: 'Logout',
+          color: Colors.blue,
+          onTap: () async {
+            await AuthRepository().signOut();
+          },
         ),
       ],
     );
   }
 
-  Widget _buildMenuItem({
+  Widget _buildProfileMenuItem({
     required IconData icon,
     required String title,
+    required Color color,
     required VoidCallback onTap,
   }) {
-    return Card(
-      elevation: 0,
-      color: Colors.grey[100],
-      margin: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        leading: Icon(icon, color: const Color(0xFFB71C1C)),
-        title: Text(title),
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 20),
+      child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(
+                icon,
+                color: color,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Text(
+              title,
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey,
+              size: 16,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Future<void> _handleProfileUpdate(UserModel updatedUser) async {
+  Future<void> _handleProfileUpdate(UserModel user) async {
     try {
-      await _databaseService.createUserProfile(updatedUser);
+      await _databaseService.updateUserProfile(user);
       setState(() {
-        _currentUser = updatedUser;
+        _currentUser = user;
         _currentSection = 'main';
       });
       if (mounted) {
