@@ -5,6 +5,8 @@ import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
 import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
+import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
+import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
 
 import '../widgets/edit_profile_content.dart';
 import '../widgets/help_content.dart';
@@ -191,8 +193,28 @@ class _ProfilePageState extends State<ProfilePage> {
             title: 'Logout',
             color: Colors.blue,
             onTap: () async {
-              await AuthRepository().signOut();
+              try {
+                await AuthRepository().signOut();
+                if (mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+                    (route) => false,
+                  );
+                }
+              } catch (e) {
+                if (mounted) {
+                  _showErrorSnackBar('Error signing out');
+                }
+              }
             },
+          ),
+          const SizedBox(height: 20),
+          _buildProfileMenuItem(
+            icon: Icons.delete_forever,
+            title: 'Delete Account',
+            color: Colors.red,
+            onTap: _handleDeleteAccount,
           ),
         ],
       ),
@@ -259,6 +281,50 @@ class _ProfilePageState extends State<ProfilePage> {
     } catch (e) {
       if (mounted) {
         _showErrorSnackBar('Error updating profile');
+      }
+    }
+  }
+
+  Future<void> _handleDeleteAccount() async {
+    // Show confirmation dialog first
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Account'),
+        content: const Text(
+          'Are you sure you want to delete your account? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _databaseService.deleteUserAccount();
+        await AuthRepository().deleteAccount();
+        if (mounted) {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            (route) => false,
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          _showErrorSnackBar('Error deleting account');
+        }
       }
     }
   }

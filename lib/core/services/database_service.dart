@@ -301,4 +301,29 @@ class DatabaseService {
       rethrow;
     }
   }
+
+  Future<void> deleteUserAccount() async {
+    try {
+      final userId = currentUserId;
+      if (userId == null) throw 'User not found';
+      
+      // Delete user data from Firestore
+      await _db.collection('users').doc(userId).delete();
+      
+      // Delete any other user-related data (transactions, etc.)
+      await _db
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .get()
+          .then((snapshot) {
+        for (var doc in snapshot.docs) {
+          doc.reference.delete();
+        }
+      });
+      
+    } catch (e) {
+      debugPrint('Error deleting user data: $e');
+      rethrow;
+    }
+  }
 } 

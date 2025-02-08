@@ -124,4 +124,16 @@ class AuthRepository {
       throw e.message ?? 'An error occurred while resetting password.';
     }
   }
+
+  // Delete Account
+  Future<void> deleteAccount() async {
+    try {
+      final user = _auth.currentUser;
+      if (user != null) {
+        await user.delete();
+      }
+    } on FirebaseAuthException catch (e) {
+      throw e.message ?? 'An error occurred while deleting account.';
+    }
+  }
 } 
