@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/services/firebase_service.dart';
 import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -57,7 +54,7 @@ class ErrorApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       home: Scaffold(
         body: Center(
           child: Text(

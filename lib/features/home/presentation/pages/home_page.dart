@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/core/services/database_service.dart';
+import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 import 'package:intl/intl.dart';
 
 class HomePage extends StatefulWidget {
@@ -18,311 +19,286 @@ class _HomePageState extends State<HomePage> {
   
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Top Section
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Hi, Welcome Back',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Good Morning',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                        onPressed: () {
-                          // Handle notifications
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Balance Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.primary.shade800,
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Column(
+    return MainNavigation(
+      child: Scaffold(
+        backgroundColor: AppColors.primary,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top Section with Total Balance and Progress
+              Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Balance Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Total Balance',
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                                Text(
-                                  currencyFormat.format(7783.00),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                const Text(
-                                  'Total Expenses',
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                                Text(
-                                  '-${currencyFormat.format(1832.00)}',
-                                  style: const TextStyle(
-                                    color: Colors.redAccent,
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
+                        Text(
+                          'Hi, Welcome Back',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                          ),
                         ),
-                        const SizedBox(height: 20),
-
-                        // Progress Bar
+                        Icon(Icons.notifications_none, color: Colors.white),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(8),
-                              child: LinearProgressIndicator(
-                                value: 0.30,
-                                backgroundColor: Colors.white.withOpacity(0.1),
-                                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                                minHeight: 8,
+                            const Text(
+                              'Total Balance',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: const [
-                                Text(
-                                  '30%',
-                                  style: TextStyle(color: Colors.white),
-                                ),
-                                Text(
-                                  '\$20,000.00',
-                                  style: TextStyle(color: Colors.white70),
-                                ),
-                              ],
+                            Text(
+                              currencyFormat.format(7783.00),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                            const SizedBox(height: 4),
+                          ],
+                        ),
+                        const SizedBox(width: 20),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             const Text(
-                              '30% Of Your Expenses, Looks Good.',
-                              style: TextStyle(color: Colors.white70),
+                              'Total Expenses',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            Text(
+                              '-${currencyFormat.format(3167.40)}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ],
                         ),
                       ],
                     ),
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  // Stats Row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.savings_outlined,
-                          title: 'Savings\nOn Goals',
-                          value: '70%',
-                          iconColor: Colors.blue,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: _buildStatCard(
-                          icon: Icons.attach_money,
-                          title: 'Revenue Last Week',
-                          value: currencyFormat.format(4000),
-                          iconColor: Colors.green,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Bottom Section
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-                ),
-                child: Column(
-                  children: [
-                    // Time Frame Selector
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceAround,
-                      children: ['Daily', 'Weekly', 'Monthly'].map((timeFrame) {
-                        final isSelected = timeFrame == _selectedTimeFrame;
-                        return GestureDetector(
-                          onTap: () => setState(() => _selectedTimeFrame = timeFrame),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 20,
-                              vertical: 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isSelected ? AppColors.primary : Colors.grey.shade100,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              timeFrame,
+                    const SizedBox(height: 20),
+                    // Progress Bar
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              '30% Of Your Expenses, Looks Good',
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.grey,
-                                fontWeight: FontWeight.bold,
+                                color: Colors.white70,
+                                fontSize: 12,
                               ),
                             ),
-                          ),
-                        );
-                      }).toList(),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Transactions List
-                    Expanded(
-                      child: ListView(
-                        children: [
-                          _buildTransactionItem(
-                            title: 'Salary',
-                            date: 'April 30',
-                            amount: 4000,
-                            icon: Icons.account_balance_wallet,
-                            iconColor: Colors.blue,
-                            isExpense: false,
-                          ),
-                          _buildTransactionItem(
-                            title: 'Groceries',
-                            date: 'April 24',
-                            amount: 100,
-                            icon: Icons.shopping_bag,
-                            iconColor: Colors.orange,
-                            isExpense: true,
-                          ),
-                          _buildTransactionItem(
-                            title: 'Rent',
-                            date: 'April 15',
-                            amount: 874.40,
-                            icon: Icons.home,
-                            iconColor: Colors.purple,
-                            isExpense: true,
-                          ),
-                        ],
-                      ),
+                            Text(
+                              '\$20,000.00',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.7),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(
+                          value: 0.3,
+                          backgroundColor: Colors.white.withOpacity(0.2),
+                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+
+              // Recent Activity Card
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.shade900,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    Column(
+                      children: [
+                        const Icon(
+                          Icons.directions_car_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Revenue Last Week',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          currencyFormat.format(4000.00),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Column(
+                      children: [
+                        const Icon(
+                          Icons.restaurant_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Food Last Week',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          currencyFormat.format(2500.00),
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              // Time Frame Selector and Transactions List
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 20),
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.vertical(
+                      top: Radius.circular(30),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      // Time Frame Selector
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                        children: [
+                          _buildTimeFrameButton('Daily'),
+                          _buildTimeFrameButton('Weekly'),
+                          _buildTimeFrameButton('Monthly'),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      
+                      // Transactions List
+                      Expanded(
+                        child: ListView(
+                          children: [
+                            _buildTransactionItem(
+                              'Salary',
+                              'Monthly',
+                              '18:27 - April 20',
+                              4000.00,
+                              false,
+                              Icons.account_balance_wallet_outlined,
+                            ),
+                            _buildTransactionItem(
+                              'Groceries',
+                              'Pantry',
+                              '17:00 - April 24',
+                              100.00,
+                              true,
+                              Icons.shopping_basket_outlined,
+                            ),
+                            _buildTransactionItem(
+                              'Rent',
+                              'Rent',
+                              '8:30 - April 15',
+                              874.40,
+                              true,
+                              Icons.home_outlined,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildStatCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color iconColor,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.primary.shade800,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: iconColor),
+  Widget _buildTimeFrameButton(String text) {
+    final isSelected = _selectedTimeFrame == text;
+    return GestureDetector(
+      onTap: () => setState(() => _selectedTimeFrame = text),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
           ),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            style: const TextStyle(color: Colors.white70, fontSize: 12),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            value,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 
-  Widget _buildTransactionItem({
-    required String title,
-    required String date,
-    required double amount,
-    required IconData icon,
-    required Color iconColor,
-    required bool isExpense,
-  }) {
+  Widget _buildTransactionItem(
+    String title,
+    String category,
+    String date,
+    double amount,
+    bool isExpense,
+    IconData icon,
+  ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 15),
       child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.1),
+              color: Colors.grey.shade100,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(icon, color: iconColor),
+            child: Icon(icon, color: AppColors.primary),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 15),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

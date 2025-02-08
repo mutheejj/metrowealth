@@ -5,7 +5,12 @@ import 'package:metrowealth/features/profile/presentation/pages/profile_page.dar
 // Import other pages
 
 class MainNavigation extends StatefulWidget {
-  const MainNavigation({Key? key}) : super(key: key);
+  final Widget child;
+  
+  const MainNavigation({
+    Key? key,
+    required this.child,
+  }) : super(key: key);
 
   @override
   State<MainNavigation> createState() => _MainNavigationState();
@@ -31,52 +36,48 @@ class _MainNavigationState extends State<MainNavigation> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _pages[_selectedIndex],
+      body: widget.child,
       bottomNavigationBar: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withOpacity(0.05),
               blurRadius: 10,
               offset: const Offset(0, -5),
             ),
           ],
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: _selectedIndex == 0,
-                  onTap: () => _onItemTapped(0),
-                ),
-                _buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: _selectedIndex == 1,
-                  onTap: () => _onItemTapped(1),
-                ),
-                _buildNavItem(
-                  icon: Icons.swap_horiz,
-                  isSelected: _selectedIndex == 2,
-                  onTap: () => _onItemTapped(2),
-                ),
-                _buildNavItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  isSelected: _selectedIndex == 3,
-                  onTap: () => _onItemTapped(3),
-                ),
-                _buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: _selectedIndex == 4,
-                  onTap: () => _onItemTapped(4),
-                ),
-              ],
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildNavItem(
+              icon: Icons.home_outlined,
+              isSelected: _selectedIndex == 0,
+              onTap: () => _onItemTapped(0),
             ),
-          ),
+            _buildNavItem(
+              icon: Icons.insert_chart_outlined,
+              isSelected: _selectedIndex == 1,
+              onTap: () => _onItemTapped(1),
+            ),
+            _buildNavItem(
+              icon: Icons.add_circle_outline,
+              isSelected: _selectedIndex == 2,
+              onTap: () => _onItemTapped(2),
+            ),
+            _buildNavItem(
+              icon: Icons.account_balance_wallet_outlined,
+              isSelected: _selectedIndex == 3,
+              onTap: () => _onItemTapped(3),
+            ),
+            _buildNavItem(
+              icon: Icons.person_outline,
+              isSelected: _selectedIndex == 4,
+              onTap: () => _onItemTapped(4),
+            ),
+          ],
         ),
       ),
     );
