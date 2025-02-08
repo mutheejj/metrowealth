@@ -7,6 +7,7 @@ import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart
 import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
 import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
 import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
+import 'package:metrowealth/features/auth/presentation/pages/login_page.dart';
 
 import '../widgets/edit_profile_content.dart';
 import '../widgets/help_content.dart';
@@ -286,13 +287,28 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Future<void> _handleDeleteAccount() async {
-    // Show confirmation dialog first
-    final bool? confirm = await showDialog<bool>(
+    final passwordController = TextEditingController();
+    
+    final bool? confirmPassword = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Delete Account'),
-        content: const Text(
-          'Are you sure you want to delete your account? This action cannot be undone.',
+        title: const Text('Confirm Password'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              'Please enter your password to delete your account. This action cannot be undone.',
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: passwordController,
+              obscureText: true,
+              decoration: const InputDecoration(
+                labelText: 'Password',
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
@@ -304,26 +320,30 @@ class _ProfilePageState extends State<ProfilePage> {
               foregroundColor: Colors.red,
             ),
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete'),
+            child: const Text('Delete Account'),
           ),
         ],
       ),
     );
 
-    if (confirm == true) {
+    if (confirmPassword == true) {
       try {
+        // First delete the auth account (this will reauthenticate)
+        await AuthRepository().deleteAccount(password: passwordController.text);
+        
+        // Then delete Firestore data
         await _databaseService.deleteUserAccount();
-        await AuthRepository().deleteAccount();
+        
         if (mounted) {
           Navigator.pushAndRemoveUntil(
             context,
-            MaterialPageRoute(builder: (context) => const WelcomeScreen()),
+            MaterialPageRoute(builder: (context) => const LoginPage()),
             (route) => false,
           );
         }
       } catch (e) {
         if (mounted) {
-          _showErrorSnackBar('Error deleting account');
+          _showErrorSnackBar(e.toString());
         }
       }
     }

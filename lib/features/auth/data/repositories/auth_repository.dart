@@ -126,14 +126,64 @@ class AuthRepository {
   }
 
   // Delete Account
-  Future<void> deleteAccount() async {
+  Future<void> deleteAccount({required String password}) async {
     try {
       final user = _auth.currentUser;
-      if (user != null) {
-        await user.delete();
-      }
+      if (user == null) throw 'No user logged in';
+
+      // Reauthenticate before deleting
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: password,
+      );
+      
+      await user.reauthenticateWithCredential(credential);
+      await user.delete();
     } on FirebaseAuthException catch (e) {
-      throw e.message ?? 'An error occurred while deleting account.';
+      switch (e.code) {
+        case 'wrong-password':
+          throw 'Current password is incorrect';
+        case 'requires-recent-login':
+          throw 'Please log in again before deleting your account';
+        default:
+          throw e.message ?? 'An error occurred while deleting account';
+      }
+    } catch (e) {
+      throw 'Failed to delete account';
+    }
+  }
+
+  // Change Password
+  Future<void> changePassword({
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'No user logged in';
+
+      // Get credentials for reauthentication
+      final credential = EmailAuthProvider.credential(
+        email: user.email!,
+        password: currentPassword,
+      );
+
+      // Reauthenticate user
+      await user.reauthenticateWithCredential(credential);
+
+      // Change password
+      await user.updatePassword(newPassword);
+    } on FirebaseAuthException catch (e) {
+      switch (e.code) {
+        case 'wrong-password':
+          throw 'Current password is incorrect';
+        case 'weak-password':
+          throw 'New password is too weak';
+        default:
+          throw e.message ?? 'An error occurred while changing password';
+      }
+    } catch (e) {
+      throw 'Failed to change password';
     }
   }
 } 
