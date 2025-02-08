@@ -6,6 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
 import 'package:metrowealth/features/categories/presentation/widgets/add_category_dialog.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
+import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({Key? key}) : super(key: key);
@@ -83,161 +87,229 @@ class _CategoriesPageState extends State<CategoriesPage> {
     ),
   ];
 
+  int _selectedIndex = 1; // Set to 1 for categories tab
+
   @override
   Widget build(BuildContext context) {
     final totalSpent = _categories.fold(0.0, (sum, cat) => sum + cat.spent);
     final totalBudget = _categories.fold(0.0, (sum, cat) => sum + cat.budget);
     final progress = totalSpent / totalBudget;
 
-    return MainNavigation(
-      child: Scaffold(
-        backgroundColor: AppColors.primary,
-        body: SafeArea(
-          child: Column(
-            children: [
-              // Header with back button and notification
-              Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
+    return Scaffold(
+      backgroundColor: AppColors.primary,
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Header with back button and notification
+            Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                  const Expanded(
+                    child: Text(
+                      'Categories',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    const Expanded(
-                      child: Text(
-                        'Categories',
-                        style: TextStyle(
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    onPressed: () {}, // TODO: Handle notifications
+                  ),
+                ],
+              ),
+            ),
+
+            // Total Balance and Expenses
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Total Balance',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            currencyFormat.format(totalSpent),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          const Text(
+                            'Total Expense',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 14,
+                            ),
+                          ),
+                          Text(
+                            '-${currencyFormat.format(totalBudget - totalSpent)}',
+                            style: const TextStyle(
+                              color: Colors.blue,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                  // Progress bar
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      backgroundColor: Colors.white24,
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 8,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        '${(progress * 100).toInt()}% Of Your Expenses',
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        currencyFormat.format(totalBudget),
+                        style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 12,
                         ),
-                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      onPressed: () {}, // TODO: Handle notifications
-                    ),
-                  ],
-                ),
-              ),
-
-              // Total Balance and Expenses
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Total Balance',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              currencyFormat.format(totalSpent),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            const Text(
-                              'Total Expense',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 14,
-                              ),
-                            ),
-                            Text(
-                              '-${currencyFormat.format(totalBudget - totalSpent)}',
-                              style: const TextStyle(
-                                color: Colors.blue,
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    // Progress bar
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(10),
-                      child: LinearProgressIndicator(
-                        value: progress,
-                        backgroundColor: Colors.white24,
-                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                        minHeight: 8,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${(progress * 100).toInt()}% Of Your Expenses',
-                          style: const TextStyle(
-                            color: Colors.white70,
-                            fontSize: 12,
-                          ),
-                        ),
-                        Text(
-                          currencyFormat.format(totalBudget),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(height: 20),
-              
-              // Categories Grid
-              Expanded(
-                child: Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.vertical(
-                      top: Radius.circular(30),
-                    ),
+                    ],
                   ),
-                  child: GridView.builder(
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 3,
-                      childAspectRatio: 1.0,
-                      crossAxisSpacing: 15,
-                      mainAxisSpacing: 15,
-                    ),
-                    itemCount: _categories.length + 1, // +1 for "More" button
-                    itemBuilder: (context, index) {
-                      if (index == _categories.length) {
-                        return _buildMoreCard();
-                      }
-                      return _buildCategoryCard(_categories[index]);
-                    },
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            
+            // Categories Grid
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.vertical(
+                    top: Radius.circular(30),
                   ),
                 ),
+                child: GridView.builder(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    childAspectRatio: 1.0,
+                    crossAxisSpacing: 15,
+                    mainAxisSpacing: 15,
+                  ),
+                  itemCount: _categories.length + 1, // +1 for "More" button
+                  itemBuilder: (context, index) {
+                    if (index == _categories.length) {
+                      return _buildMoreCard();
+                    }
+                    return _buildCategoryCard(_categories[index]);
+                  },
+                ),
               ),
-            ],
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(
+                  icon: Icons.home_outlined,
+                  isSelected: _selectedIndex == 0,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.category_outlined,
+                  isSelected: _selectedIndex == 1,
+                  onTap: () {}, // Already on categories page
+                ),
+                _buildNavItem(
+                  icon: Icons.receipt_long_outlined,
+                  isSelected: _selectedIndex == 2,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const TransactionsPage()),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.analytics_outlined,
+                  isSelected: _selectedIndex == 3,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                    );
+                  },
+                ),
+                _buildNavItem(
+                  icon: Icons.person_outline,
+                  isSelected: _selectedIndex == 4,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage()),
+                    );
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -425,6 +497,28 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ],
         );
       },
+    );
+  }
+
+  Widget _buildNavItem({
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(
+          icon,
+          color: isSelected ? Colors.white : const Color(0xFF757575),
+          size: 24,
+        ),
+      ),
     );
   }
 } 

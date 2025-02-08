@@ -39,9 +39,9 @@ class _AnalysisPageState extends State<AnalysisPage> {
       ),
       body: Column(
         children: [
-          // Balance and Progress Section
+          // Balance Section
           Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               children: [
                 Row(
@@ -65,165 +65,213 @@ class _AnalysisPageState extends State<AnalysisPage> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 10),
                 // Progress Bar
                 ClipRRect(
                   borderRadius: BorderRadius.circular(10),
                   child: LinearProgressIndicator(
-                    value: 0.3, // 30%
+                    value: 0.3,
                     backgroundColor: Colors.white.withOpacity(0.2),
                     valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-                    minHeight: 10,
+                    minHeight: 8,
                   ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  '30% of Your Expenses Looks Good',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 14,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      '30% of Your Expenses Looks Good',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                    Text(
+                      currencyFormat.format(20000.00),
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
           ),
+          const SizedBox(height: 20),
 
-          // Period Selection
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(25),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildPeriodButton('Daily'),
-                _buildPeriodButton('Weekly'),
-                _buildPeriodButton('Monthly'),
-                _buildPeriodButton('Year'),
-              ],
-            ),
-          ),
-
-          // Chart Section
+          // Main Content Area
           Expanded(
             child: Container(
-              margin: const EdgeInsets.all(16),
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: const BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(25),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Income & Expenses',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Row(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Period Selection
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.arrow_upward, 
-                              color: Colors.green, size: 16),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.all(4),
-                            decoration: BoxDecoration(
-                              color: Colors.red.withOpacity(0.2),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(Icons.arrow_downward, 
-                              color: Colors.red, size: 16),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Expanded(
-                    child: BarChart(
-                      BarChartData(
-                        maxY: 5000,
-                        barTouchData: BarTouchData(enabled: false),
-                        titlesData: FlTitlesData(
-                          show: true,
-                          bottomTitles: AxisTitles(
-                            sideTitles: SideTitles(
-                              showTitles: true,
-                              getTitlesWidget: (value, meta) {
-                                const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-                                return Text(
-                                  days[value.toInt() % 7],
-                                  style: const TextStyle(fontSize: 12),
-                                );
-                              },
-                            ),
-                          ),
-                          leftTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          rightTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                          topTitles: AxisTitles(
-                            sideTitles: SideTitles(showTitles: false),
-                          ),
-                        ),
-                        borderData: FlBorderData(show: false),
-                        gridData: FlGridData(show: false),
-                        barGroups: [
-                          _generateBarGroup(0, 4000, 1200),
-                          _generateBarGroup(1, 3000, 800),
-                          _generateBarGroup(2, 4500, 1500),
-                          _generateBarGroup(3, 3500, 900),
-                          _generateBarGroup(4, 4200, 1100),
-                          _generateBarGroup(5, 3800, 1300),
-                          _generateBarGroup(6, 4100, 1000),
+                          _buildPeriodButton('Daily'),
+                          const SizedBox(width: 10),
+                          _buildPeriodButton('Weekly'),
+                          const SizedBox(width: 10),
+                          _buildPeriodButton('Monthly'),
+                          const SizedBox(width: 10),
+                          _buildPeriodButton('Year'),
                         ],
                       ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+                    const SizedBox(height: 20),
 
-          // Summary Cards
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildSummaryCard(
-                    title: 'Income',
-                    amount: 4120.00,
-                    isIncome: true,
-                  ),
+                    // Chart Section
+                    Container(
+                      padding: const EdgeInsets.all(15),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withOpacity(0.1),
+                            spreadRadius: 1,
+                            blurRadius: 10,
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text(
+                                'Income & Expenses',
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Icon(
+                                      Icons.search,
+                                      color: Colors.blue,
+                                      size: 16,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.blue.withOpacity(0.2),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                    child: const Icon(
+                                      Icons.calendar_today,
+                                      color: Colors.blue,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 20),
+                          SizedBox(
+                            height: 200,
+                            child: BarChart(
+                              BarChartData(
+                                barTouchData: BarTouchData(enabled: false),
+                                titlesData: FlTitlesData(
+                                  show: true,
+                                  bottomTitles: AxisTitles(
+                                    sideTitles: SideTitles(
+                                      showTitles: true,
+                                      getTitlesWidget: (value, meta) {
+                                        const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+                                        return Text(
+                                          days[value.toInt() % 7],
+                                          style: const TextStyle(fontSize: 12),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                  leftTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  rightTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                  topTitles: AxisTitles(
+                                    sideTitles: SideTitles(showTitles: false),
+                                  ),
+                                ),
+                                borderData: FlBorderData(show: false),
+                                gridData: FlGridData(show: false),
+                                barGroups: [
+                                  _generateBarGroup(0, 1000, 500),
+                                  _generateBarGroup(1, 1200, 700),
+                                  _generateBarGroup(2, 800, 400),
+                                  _generateBarGroup(3, 1500, 800),
+                                  _generateBarGroup(4, 1000, 600),
+                                  _generateBarGroup(5, 900, 300),
+                                  _generateBarGroup(6, 1100, 550),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Summary Cards
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildSummaryCard(
+                            title: 'Income',
+                            amount: 4120.00,
+                            isIncome: true,
+                          ),
+                        ),
+                        const SizedBox(width: 15),
+                        Expanded(
+                          child: _buildSummaryCard(
+                            title: 'Expense',
+                            amount: 1187.40,
+                            isIncome: false,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 15),
+                    const Text(
+                      'My Targets',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: _buildSummaryCard(
-                    title: 'Expense',
-                    amount: 1187.40,
-                    isIncome: false,
-                  ),
-                ),
-              ],
+              ),
             ),
           ),
         ],
