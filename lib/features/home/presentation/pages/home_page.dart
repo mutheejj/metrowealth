@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
+import 'package:metrowealth/features/notifications/presentation/widgets/notification_overlay.dart';
+import 'package:metrowealth/features/notifications/data/models/notification_model.dart';
+import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -11,279 +16,485 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
   String _selectedTimeFrame = 'Monthly';
+  bool _showNotifications = false;
+  final List<NotificationModel> _notifications = [
+    NotificationModel(
+      id: '1',
+      title: 'Reminder!',
+      message: 'Set up your automatic savings to reach your goals.',
+      timestamp: DateTime.now().subtract(const Duration(hours: 1)),
+      type: 'reminder',
+    ),
+    NotificationModel(
+      id: '2',
+      title: 'New Update',
+      message: 'Set up your automatic savings to reach your goals.',
+      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
+      type: 'transaction',
+    ),
+    // Add more notifications as needed
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Color(0xFFB71C1C),
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    // List of pages
+    final List<Widget> pages = [
+      _buildMainContent(), // Extract your current home content to this method
+      const CategoriesPage(),
+      const Center(child: Text('Statistics')),
+      const ProfilePage(),
+    ];
+
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: SafeArea(
+      backgroundColor: _selectedIndex == 0 ? const Color(0xFFB71C1C) : Colors.white,
+      body: Stack(
+        children: [
+          pages[_selectedIndex],
+
+          if (_showNotifications)
+            NotificationOverlay(
+              notifications: _notifications,
+              onClose: () {
+                setState(() {
+                  _showNotifications = false;
+                });
+              },
+            ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, -5),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildNavItem(0, Icons.home_outlined, 'Home'),
+                _buildNavItem(1, Icons.category_outlined, 'Categories'),
+                _buildNavItem(2, Icons.bar_chart_outlined, 'Statistics'),
+                _buildNavItem(3, Icons.person_outline, 'Profile'),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(int index, IconData icon, String label) {
+    final isSelected = _selectedIndex == index;
+    return InkWell(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Header Section with Red Background
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
-                ),
+            Icon(
+              icon,
+              color: isSelected ? AppColors.primary : Colors.grey,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : Colors.grey,
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMainContent() {
+    return Column(
+      children: [
+        // Top Section
+        Container(
+          padding: EdgeInsets.only(
+            top: MediaQuery.of(context).padding.top + 16,
+            left: 20,
+            right: 20,
+            bottom: 20,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // Welcome and Notification Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Hi, Welcome Back',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            'Good Morning',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                        onPressed: () {},
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Balance Section
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: const [
-                          Text(
-                            'Total Balance',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          Text(
-                            '\$7,783.00',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: const [
-                          Text(
-                            'Total Expense',
-                            style: TextStyle(color: Colors.white70),
-                          ),
-                          Text(
-                            '-\$1,187.40',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-
-                  // Progress Bar
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: LinearProgressIndicator(
-                          value: 0.3,
-                          backgroundColor: Colors.white.withOpacity(0.2),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                          minHeight: 8,
+                    children: const [
+                      Text(
+                        'Hi, Welcome Back',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            '30%',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                          Text(
-                            '\$20,000.00',
-                            style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
                       Text(
-                        '30% Of Your Expenses, Looks Good.',
-                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                        'Good Morning',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 20),
-
-                  // Stats Card
                   Container(
-                    padding: const EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.8),
-                      borderRadius: BorderRadius.circular(16),
+                      color: Colors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _showNotifications = true;
+                        });
+                      },
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+
+              // Balance Section
+              Row(
+                children: [
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.blue,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.car_rental, color: Colors.white),
+                            Icon(
+                              Icons.account_balance_wallet_outlined,
+                              color: Colors.white70,
+                              size: 16,
                             ),
-                            const SizedBox(width: 12),
-                            const Text(
-                              'Savings\nOn Goals',
-                              style: TextStyle(color: Colors.white),
+                            SizedBox(width: 4),
+                            Text(
+                              'Total Balance',
+                              style: TextStyle(color: Colors.white70),
                             ),
                           ],
                         ),
-                        Container(width: 1, height: 40, color: Colors.white30),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: const [
-                            Text(
-                              'Revenue Last Week',
-                              style: TextStyle(color: Colors.white70, fontSize: 12),
-                            ),
-                            Text(
-                              '\$4,000.00',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
+                        SizedBox(height: 4),
+                        Text(
+                          'KSh 7,783.00',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                       ],
                     ),
                   ),
+                  Container(
+                    width: 1,
+                    height: 40,
+                    color: Colors.white24,
+                  ),
+                  const Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(left: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.trending_down,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                              SizedBox(width: 4),
+                              Text(
+                                'Total Expense',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            '-KSh 1,187.40',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 ],
               ),
-            ),
+              const SizedBox(height: 24),
 
-            // Time Frame Selector
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: ['Daily', 'Weekly', 'Monthly'].map((timeFrame) {
-                  return GestureDetector(
-                    onTap: () => setState(() => _selectedTimeFrame = timeFrame),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 8,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _selectedTimeFrame == timeFrame
-                            ? AppColors.primary
-                            : Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        timeFrame,
+              // Progress Bar
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: LinearProgressIndicator(
+                      value: 0.3,
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                      minHeight: 6,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        '30%',
                         style: TextStyle(
-                          color: _selectedTimeFrame == timeFrame
-                              ? Colors.white
-                              : Colors.grey,
+                          color: Colors.white,
                           fontWeight: FontWeight.w500,
                         ),
                       ),
+                      Text(
+                        'KSh 20,000.00',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '30% Of Your Expenses, Looks Good.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.7),
+                      fontSize: 13,
                     ),
-                  );
-                }).toList(),
+                  ),
+                ],
               ),
-            ),
+              const SizedBox(height: 20),
 
-            // Transactions List
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                children: [
-                  _buildTransactionItem(
-                    'Salary',
-                    '18:27 - April 30',
-                    'Monthly',
-                    '\$4,000.00',
-                    Icons.account_balance_wallet,
-                    Colors.blue,
-                  ),
-                  _buildTransactionItem(
-                    'Groceries',
-                    '17:00 - April 24',
-                    'Pantry',
-                    '-\$100.00',
-                    Icons.shopping_bag,
-                    Colors.blue,
-                  ),
-                  _buildTransactionItem(
-                    'Rent',
-                    '8:30 - April 15',
-                    'Rent',
-                    '-\$674.40',
-                    Icons.home,
-                    Colors.blue,
-                  ),
-                ],
+              // Stats Card
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.directions_car_outlined,
+                        color: Colors.white,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text(
+                      'Savings\nOn Goals',
+                      style: TextStyle(
+                        color: Colors.white,
+                        height: 1.5,
+                      ),
+                    ),
+                    const Spacer(),
+                    const Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.account_balance_wallet_outlined,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Revenue Last Week',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 4, child: ColoredBox(color: AppColors.white),),
+                        Text(
+                          'KSh 4,000.00',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.restaurant_outlined,
+                              color: Colors.white70,
+                              size: 16,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Food Last Week',
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Text(
+                          'KSh 900.00',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
+            ],
+          ),
+        ),
 
-            // Bottom Navigation Bar
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
-                    blurRadius: 10,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  _buildNavItem(Icons.home, 0),
-                  _buildNavItem(Icons.analytics, 1),
-                  _buildNavItem(Icons.sync, 2),
-                  _buildNavItem(Icons.layers, 3),
-                  _buildNavItem(Icons.person, 4),
-                ],
+        // Bottom Section
+        Expanded(
+          child: Container(
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24),
+                topRight: Radius.circular(24),
               ),
             ),
-          ],
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                // Time Frame Selector
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      _buildTimeFrameButton('Daily', 'Daily'),
+                      const SizedBox(width: 12),
+                      _buildTimeFrameButton('Weekly', 'Weekly'),
+                      const SizedBox(width: 12),
+                      _buildTimeFrameButton('Monthly', 'Monthly'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                // Transactions List
+                Expanded(
+                  child: ListView(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    children: [
+                      _buildTransactionItem(
+                        'Salary',
+                        '18:27 - April 30',
+                        'Monthly',
+                        'KSh 4,000.00',
+                        Icons.account_balance_wallet_outlined,
+                        Colors.blue,
+                      ),
+                      _buildTransactionItem(
+                        'Groceries',
+                        '17:00 - April 24',
+                        'Pantry',
+                        '-KSh 100.00',
+                        Icons.shopping_bag_outlined,
+                        Colors.orange,
+                      ),
+                      _buildTransactionItem(
+                        'Rent',
+                        '8:30 - April 15',
+                        'Rent',
+                        '-KSh 674.40',
+                        Icons.home_outlined,
+                        Colors.purple,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTimeFrameButton(String title, String timeFrame) {
+    final isSelected = _selectedTimeFrame == timeFrame;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedTimeFrame = timeFrame),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFB71C1C) : Colors.grey[100],
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Text(
+            title,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
         ),
       ),
     );
@@ -298,7 +509,7 @@ class _HomePageState extends State<HomePage> {
     Color color,
   ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Row(
         children: [
           Container(
@@ -309,7 +520,7 @@ class _HomePageState extends State<HomePage> {
             ),
             child: Icon(icon, color: color),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -325,7 +536,7 @@ class _HomePageState extends State<HomePage> {
                   date,
                   style: TextStyle(
                     color: Colors.grey[600],
-                    fontSize: 12,
+                    fontSize: 13,
                   ),
                 ),
               ],
@@ -346,30 +557,12 @@ class _HomePageState extends State<HomePage> {
                 category,
                 style: TextStyle(
                   color: Colors.grey[600],
-                  fontSize: 12,
+                  fontSize: 13,
                 ),
               ),
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem(IconData icon, int index) {
-    final isSelected = _selectedIndex == index;
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : Colors.grey,
-        ),
       ),
     );
   }
