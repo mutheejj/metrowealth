@@ -8,6 +8,8 @@ import 'dart:io';
 import 'package:metrowealth/features/banking/data/models/bank_account_model.dart';
 import 'package:metrowealth/features/loans/data/models/loan_model.dart';
 import 'package:metrowealth/features/savings/data/models/savings_account_model.dart';
+import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
+import 'package:metrowealth/features/bills/data/models/bill_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -285,21 +287,30 @@ class DatabaseService {
   Stream<List<TransactionModel>> getTransactionsByDateRange(
     String userId,
     DateTime startDate,
-    DateTime endDate,
-  ) {
+    DateTime endDate, {
+    TransactionType? type,
+    String? category,
+  }) {
     try {
-      return _db
+      var query = _db
           .collection('transactions')
           .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: startDate.toIso8601String())
-          .where('date', isLessThanOrEqualTo: endDate.toIso8601String())
-          .orderBy('date', descending: true)
-          .snapshots()
-          .map((snapshot) => snapshot.docs
-              .map((doc) => TransactionModel.fromMap(doc.data()))
-              .toList());
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .where('date', isLessThanOrEqualTo: endDate)
+          .orderBy('date', descending: true);
+
+      if (type != null) {
+        query = query.where('type', isEqualTo: type.toString());
+      }
+
+      if (category != null) {
+        query = query.where('category', isEqualTo: category);
+      }
+
+      return query.snapshots().map((snapshot) => 
+          snapshot.docs.map((doc) => TransactionModel.fromMap(doc.data())).toList());
     } catch (e) {
-      debugPrint('Error getting transactions by date range: $e');
+      debugPrint('Error getting transactions: $e');
       rethrow;
     }
   }
@@ -483,20 +494,77 @@ class DatabaseService {
   // Transaction Methods with Categories
   Future<void> createTransaction(TransactionModel transaction) async {
     try {
-      await _db.collection('transactions').doc(transaction.id).set(transaction.toMap());
+      final batch = _db.batch();
+      
+      // Add transaction document
+      final transactionRef = _db.collection('transactions').doc(transaction.id);
+      batch.set(transactionRef, transaction.toMap());
 
-      // Update relevant balances
+      // Update user balances based on transaction type
       final userRef = _db.collection('users').doc(transaction.userId);
       
-      if (transaction.type == TransactionType.expense) {
-        await userRef.update({
-          'totalBalance': FieldValue.increment(-transaction.amount)
-        });
-      } else {
-        await userRef.update({
-          'totalBalance': FieldValue.increment(transaction.amount)
-        });
+      switch (transaction.type) {
+        case TransactionType.expense:
+          batch.update(userRef, {
+            'totalBalance': FieldValue.increment(-transaction.amount),
+            'statistics.totalExpenses': FieldValue.increment(transaction.amount),
+          });
+          break;
+        case TransactionType.income:
+          batch.update(userRef, {
+            'totalBalance': FieldValue.increment(transaction.amount),
+            'statistics.totalIncome': FieldValue.increment(transaction.amount),
+          });
+          break;
+        case TransactionType.transfer:
+          if (transaction.recipientId != null) {
+            final recipientRef = _db.collection('users').doc(transaction.recipientId);
+            batch.update(userRef, {
+              'totalBalance': FieldValue.increment(-transaction.amount),
+            });
+            batch.update(recipientRef, {
+              'totalBalance': FieldValue.increment(transaction.amount),
+            });
+          }
+          break;
+        case TransactionType.savingsDeposit:
+          batch.update(userRef, {
+            'savingsBalance': FieldValue.increment(transaction.amount),
+            'totalBalance': FieldValue.increment(-transaction.amount),
+          });
+          break;
+        case TransactionType.savingsWithdrawal:
+          batch.update(userRef, {
+            'savingsBalance': FieldValue.increment(-transaction.amount),
+            'totalBalance': FieldValue.increment(transaction.amount),
+          });
+          break;
+        case TransactionType.loanPayment:
+          batch.update(userRef, {
+            'loanBalance': FieldValue.increment(-transaction.amount),
+            'totalBalance': FieldValue.increment(-transaction.amount),
+          });
+          break;
+        case TransactionType.loanDisbursement:
+          batch.update(userRef, {
+            'loanBalance': FieldValue.increment(transaction.amount),
+            'totalBalance': FieldValue.increment(transaction.amount),
+          });
+          break;
+        case TransactionType.billPayment:
+          batch.update(userRef, {
+            'totalBalance': FieldValue.increment(-transaction.amount),
+            'statistics.totalExpenses': FieldValue.increment(transaction.amount),
+          });
+          break;
+        default:
+          batch.update(userRef, {
+            'totalBalance': FieldValue.increment(-transaction.amount),
+          });
+          break;
       }
+
+      await batch.commit();
     } catch (e) {
       debugPrint('Error creating transaction: $e');
       rethrow;
@@ -506,5 +574,92 @@ class DatabaseService {
   // Get user stream
   Stream<DocumentSnapshot> getUserStream(String userId) {
     return _db.collection('users').doc(userId).snapshots();
+  }
+
+  // Savings Goals Methods
+  Future<void> createSavingsGoal(SavingsGoalModel goal) async {
+    try {
+      await _db.collection('savings_goals').doc(goal.id).set(goal.toMap());
+    } catch (e) {
+      debugPrint('Error creating savings goal: $e');
+      rethrow;
+    }
+  }
+
+  Stream<List<SavingsGoalModel>> getSavingsGoals(String userId) {
+    return _db
+        .collection('savings_goals')
+        .where('userId', isEqualTo: userId)
+        .orderBy('targetDate')
+        .snapshots()
+        .map((snapshot) => snapshot.docs
+            .map((doc) => SavingsGoalModel.fromMap(doc.data()))
+            .toList());
+  }
+
+  // Bills Methods
+  Future<void> createBill(BillModel bill) async {
+    try {
+      await _db.collection('bills').doc(bill.id).set(bill.toMap());
+    } catch (e) {
+      debugPrint('Error creating bill: $e');
+      rethrow;
+    }
+  }
+
+  Stream<List<BillModel>> getUpcomingBills(String userId) {
+    final now = DateTime.now();
+    return _db
+        .collection('bills')
+        .where('userId', isEqualTo: userId)
+        .where('dueDate', isGreaterThanOrEqualTo: now)
+        .orderBy('dueDate')
+        .limit(5)
+        .snapshots()
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => BillModel.fromMap(doc.data())).toList());
+  }
+
+  // Statistics Methods
+  Future<Map<String, dynamic>> getMonthlyStatistics(
+    String userId,
+    DateTime month,
+  ) async {
+    try {
+      final startDate = DateTime(month.year, month.month, 1);
+      final endDate = DateTime(month.year, month.month + 1, 0);
+
+      // Wait for the stream to emit first value
+      final transactions = await getTransactionsByDateRange(
+        userId,
+        startDate,
+        endDate,
+      ).first;  // Add .first to get the first value from the stream
+
+      // Calculate statistics
+      double totalIncome = 0;
+      double totalExpenses = 0;
+      Map<String, double> categoryTotals = {};
+
+      for (var transaction in transactions) {
+        if (transaction.type == TransactionType.income) {
+          totalIncome += transaction.amount;
+        } else if (transaction.type == TransactionType.expense) {
+          totalExpenses += transaction.amount;
+          categoryTotals[transaction.category] =
+              (categoryTotals[transaction.category] ?? 0) + transaction.amount;
+        }
+      }
+
+      return {
+        'totalIncome': totalIncome,
+        'totalExpenses': totalExpenses,
+        'categoryTotals': categoryTotals,
+        'savingsRate': totalIncome > 0 ? (totalIncome - totalExpenses) / totalIncome : 0,
+      };
+    } catch (e) {
+      debugPrint('Error getting monthly statistics: $e');
+      rethrow;
+    }
   }
 } 

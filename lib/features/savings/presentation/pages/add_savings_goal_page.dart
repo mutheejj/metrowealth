@@ -8,6 +8,7 @@ import 'package:metrowealth/features/transactions/presentation/pages/transaction
 import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 import 'package:metrowealth/features/notifications/presentation/pages/notification_page.dart';
+import 'package:metrowealth/core/services/database_service.dart';
 
 import '../../../../core/widgets/bottom_nav_bar.dart';
 
@@ -24,6 +25,9 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
   final _targetAmountController = TextEditingController();
   DateTime _targetDate = DateTime(2025, 12, 31);
   String _selectedIcon = 'savings';
+  final _descriptionController = TextEditingController();
+  final DatabaseService _db = DatabaseService();
+  bool _isLoading = false;
 
   final currencyFormat = NumberFormat.currency(symbol: '\$');
 
@@ -31,6 +35,7 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
   void dispose() {
     _nameController.dispose();
     _targetAmountController.dispose();
+    _descriptionController.dispose();
     super.dispose();
   }
 
@@ -181,11 +186,26 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
                         ),
                         const SizedBox(height: 30),
 
+                        // Description
+                        TextFormField(
+                          controller: _descriptionController,
+                          decoration: InputDecoration(
+                            labelText: 'Description',
+                            filled: true,
+                            fillColor: const Color(0xFFF0FFF0),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+
                         // Save Button
                         SizedBox(
                           width: double.infinity,
                           child: ElevatedButton(
-                            onPressed: _saveGoal,
+                            onPressed: _createSavingsGoal,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               padding: const EdgeInsets.symmetric(vertical: 16),
@@ -193,14 +213,16 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
                                 borderRadius: BorderRadius.circular(12),
                               ),
                             ),
-                            child: const Text(
-                              'Save Goal',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
+                            child: _isLoading
+                                ? const CircularProgressIndicator()
+                                : const Text(
+                                    'Save Goal',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
                           ),
                         ),
                       ],
@@ -310,17 +332,45 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
     }
   }
 
-  void _saveGoal() {
+  void _createSavingsGoal() async {
     if (_formKey.currentState!.validate()) {
-      final newGoal = SavingsGoalModel(
-        id: DateTime.now().toString(),
-        name: _nameController.text,
-        icon: _selectedIcon,
-        targetAmount: double.parse(_targetAmountController.text),
-        savedAmount: 0,
-        targetDate: _targetDate,
-      );
-      Navigator.pop(context, newGoal);
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final newGoal = SavingsGoalModel(
+          id: DateTime.now().millisecondsSinceEpoch.toString(),
+          userId: _db.currentUserId!,
+          title: _nameController.text,
+          name: _nameController.text,
+          icon: _selectedIcon,
+          targetAmount: double.parse(_targetAmountController.text),
+          currentAmount: 0,
+          savedAmount: 0,
+          targetDate: _targetDate,
+          description: _descriptionController.text,
+        );
+
+        await _db.createSavingsGoal(newGoal);
+
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Savings goal created successfully')),
+          );
+        }
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error creating savings goal: $e')),
+        );
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
     }
   }
 } 

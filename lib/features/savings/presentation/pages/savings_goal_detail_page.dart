@@ -16,16 +16,16 @@ class SavingsGoalDetailPage extends StatefulWidget {
   final SavingsGoalModel goal;
 
   const SavingsGoalDetailPage({
-    Key? key,
+    super.key,
     required this.goal,
-  }) : super(key: key);
+  });
 
   @override
   State<SavingsGoalDetailPage> createState() => _SavingsGoalDetailPageState();
 }
 
 class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
-  final currencyFormat = NumberFormat.currency(symbol: '\$');
+  final currencyFormat = NumberFormat.currency(symbol: 'KES ');
 
   final List<SavingsDeposit> _deposits = [
     SavingsDeposit(

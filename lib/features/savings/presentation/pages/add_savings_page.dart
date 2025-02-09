@@ -8,9 +8,9 @@ class AddSavingsPage extends StatefulWidget {
   final SavingsGoalModel goal;
 
   const AddSavingsPage({
-    Key? key,
+    super.key,
     required this.goal,
-  }) : super(key: key);
+  });
 
   @override
   State<AddSavingsPage> createState() => _AddSavingsPageState();
@@ -26,6 +26,10 @@ class _AddSavingsPageState extends State<AddSavingsPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Add to ${widget.goal.title}'),
+        backgroundColor: AppColors.primary,
+      ),
       backgroundColor: AppColors.primary,
       body: SafeArea(
         child: Column(
