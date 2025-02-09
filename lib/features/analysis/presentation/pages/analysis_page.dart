@@ -7,6 +7,7 @@ import 'package:metrowealth/features/categories/presentation/pages/categories_pa
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 import 'package:metrowealth/features/analysis/presentation/pages/search_page.dart';
+import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
 
 class AnalysisPage extends StatefulWidget {
   const AnalysisPage({Key? key}) : super(key: key);
@@ -348,54 +349,46 @@ class _AnalysisPageState extends State<AnalysisPage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.home_outlined,
-                  isSelected: _selectedIndex == 0,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
-                  },
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomePage()),
+                  ),
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.category_outlined,
-                  isSelected: _selectedIndex == 1,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                    );
-                  },
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
+                  ),
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.receipt_long_outlined,
-                  isSelected: _selectedIndex == 2,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const TransactionsPage()),
-                    );
-                  },
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TransactionsPage()),
+                  ),
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.analytics_outlined,
-                  isSelected: _selectedIndex == 3,
-                  onTap: () {}, // Already on analysis page
+                  isSelected: true,
+                  onTap: () {},
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.person_outline,
-                  isSelected: _selectedIndex == 4,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage()),
-                    );
-                  },
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  ),
                 ),
               ],
             ),
@@ -485,28 +478,6 @@ class _AnalysisPageState extends State<AnalysisPage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : const Color(0xFF757575),
-          size: 24,
-        ),
       ),
     );
   }

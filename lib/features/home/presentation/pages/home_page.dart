@@ -8,6 +8,8 @@ import 'package:metrowealth/features/navigation/presentation/pages/main_navigati
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
+import 'package:metrowealth/features/notifications/presentation/pages/notification_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({Key? key}) : super(key: key);
@@ -35,17 +37,25 @@ class _HomePageState extends State<HomePage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Row(
+                  Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(
+                      const Text(
                         'Hi, Welcome Back',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 16,
                         ),
                       ),
-                      Icon(Icons.notifications_none, color: Colors.white),
+                      IconButton(
+                        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const NotificationPage()),
+                          );
+                        },
+                      ),
                     ],
                   ),
                   const SizedBox(height: 20),
@@ -378,18 +388,18 @@ class _HomePageState extends State<HomePage> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.home_outlined,
-                  isSelected: _selectedIndex == 0,
+                  isSelected: true, // Home page is selected
                   onTap: () {}, // Already on home page
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.category_outlined,
-                  isSelected: _selectedIndex == 1,
+                  isSelected: false,
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
@@ -397,9 +407,9 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.receipt_long_outlined,
-                  isSelected: _selectedIndex == 2,
+                  isSelected: false,
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
@@ -407,9 +417,9 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.analytics_outlined,
-                  isSelected: _selectedIndex == 3,
+                  isSelected: false,
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
@@ -417,9 +427,9 @@ class _HomePageState extends State<HomePage> {
                     );
                   },
                 ),
-                _buildNavItem(
+                buildNavItem(
                   icon: Icons.person_outline,
-                  isSelected: _selectedIndex == 4,
+                  isSelected: false,
                   onTap: () {
                     Navigator.pushReplacement(
                       context,
@@ -533,28 +543,6 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : const Color(0xFF757575),
-          size: 24,
-        ),
       ),
     );
   }

@@ -4,6 +4,13 @@ import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/savings/presentation/pages/add_savings_page.dart';
 import 'package:metrowealth/features/savings/data/models/savings_deposit_model.dart';
+import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
+import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
+import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/notifications/presentation/pages/notification_page.dart';
 
 class SavingsGoalDetailPage extends StatefulWidget {
   final SavingsGoalModel goal;
@@ -69,7 +76,12 @@ class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                    onPressed: () {}, // TODO: Handle notifications
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const NotificationPage()),
+                      );
+                    },
                   ),
                 ],
               ),
@@ -224,6 +236,69 @@ class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
               ),
             ),
           ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                buildNavItem(
+                  icon: Icons.home_outlined,
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const HomePage()),
+                  ),
+                ),
+                buildNavItem(
+                  icon: Icons.category_outlined,
+                  isSelected: true, // Keep categories selected
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
+                  ),
+                ),
+                buildNavItem(
+                  icon: Icons.receipt_long_outlined,
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const TransactionsPage()),
+                  ),
+                ),
+                buildNavItem(
+                  icon: Icons.analytics_outlined,
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                  ),
+                ),
+                buildNavItem(
+                  icon: Icons.person_outline,
+                  isSelected: false,
+                  onTap: () => Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

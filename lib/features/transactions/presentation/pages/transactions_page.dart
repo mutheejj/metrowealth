@@ -5,6 +5,7 @@ import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
+import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
 
 class TransactionsPage extends StatefulWidget {
   const TransactionsPage({Key? key}) : super(key: key);
@@ -127,7 +128,74 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavigation(),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -3),
+            ),
+          ],
+        ),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                buildNavItem(
+                  icon: Icons.home_outlined,
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    );
+                  },
+                ),
+                buildNavItem(
+                  icon: Icons.category_outlined,
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const CategoriesPage()),
+                    );
+                  },
+                ),
+                buildNavItem(
+                  icon: Icons.receipt_long_outlined,
+                  isSelected: true, // Transactions page is selected
+                  onTap: () {}, // Already on transactions page
+                ),
+                buildNavItem(
+                  icon: Icons.analytics_outlined,
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                    );
+                  },
+                ),
+                buildNavItem(
+                  icon: Icons.person_outline,
+                  isSelected: false,
+                  onTap: () {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage()),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -389,99 +457,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
             ],
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildBottomNavigation() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.2),
-            spreadRadius: 1,
-            blurRadius: 10,
-            offset: const Offset(0, -3),
-          ),
-        ],
-      ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _buildNavItem(
-                icon: Icons.home_outlined,
-                isSelected: _selectedIndex == 0,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.category_outlined,
-                isSelected: _selectedIndex == 1,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.receipt_long_outlined,
-                isSelected: _selectedIndex == 2,
-                onTap: () {}, // Already on transactions page
-              ),
-              _buildNavItem(
-                icon: Icons.analytics_outlined,
-                isSelected: _selectedIndex == 3,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AnalysisPage()),
-                  );
-                },
-              ),
-              _buildNavItem(
-                icon: Icons.person_outline,
-                isSelected: _selectedIndex == 4,
-                onTap: () {
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfilePage()),
-                  );
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNavItem({
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Icon(
-          icon,
-          color: isSelected ? Colors.white : const Color(0xFF757575),
-          size: 24,
-        ),
       ),
     );
   }
