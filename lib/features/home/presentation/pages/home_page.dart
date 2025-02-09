@@ -74,7 +74,81 @@ class _HomePageState extends State<HomePage> {
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               slivers: [
-                _buildAppBar(),
+                SliverAppBar(
+                  backgroundColor: AppColors.primary,
+                  elevation: 0,
+                  pinned: true,
+                  automaticallyImplyLeading: false,
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Welcome back, ${_user?.fullName?.split(' ')[0] ?? 'User'}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Text(
+                              DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    IconButton(
+                      icon: Stack(
+                        children: [
+                          const Icon(Icons.notifications_outlined, color: Colors.white),
+                          Positioned(
+                            right: 0,
+                            top: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 14,
+                                minHeight: 14,
+                              ),
+                              child: const Text(
+                                '2',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 8,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const NotificationPage()),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
+                      onPressed: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProfilePage()),
+                      ),
+                    ),
+                  ],
+                ),
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -142,126 +216,6 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
       ),
-    );
-  }
-
-  SliverAppBar _buildAppBar() {
-    return SliverAppBar(
-      expandedHeight: 140.0,
-      floating: true,
-      pinned: true,
-      stretch: true,
-      automaticallyImplyLeading: false,
-      backgroundColor: AppColors.primary,
-      flexibleSpace: LayoutBuilder(
-        builder: (context, constraints) {
-          final bool isCollapsed = constraints.maxHeight <= kToolbarHeight + 30;
-          return FlexibleSpaceBar(
-            titlePadding: EdgeInsets.only(
-              left: 16,
-              right: 16,
-              bottom: 16,
-              top: MediaQuery.of(context).padding.top + (isCollapsed ? 0 : 16),
-            ),
-            title: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              height: isCollapsed ? 20 : 80,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (!isCollapsed) ...[
-                    Text(
-                      'Welcome back,',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 10,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _user?.fullName?.split(' ')[0] ?? 'User',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 10,
-                      ),
-                    ),
-                  ] else
-                    const Text(
-                      'MetroWealth',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            background: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.primary, Color(0xFFFF0000)],
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-      actions: [
-        IconButton(
-          icon: Stack(
-            children: [
-              const Icon(Icons.notifications_outlined, color: Colors.white),
-              Positioned(
-                right: 0,
-                top: 0,
-                child: Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: const BoxDecoration(
-                    color: Colors.red,
-                    shape: BoxShape.circle,
-                  ),
-                  constraints: const BoxConstraints(
-                    minWidth: 14,
-                    minHeight: 14,
-                  ),
-                  child: const Text(
-                    '2',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 8,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const NotificationPage()),
-          ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
-          onPressed: () => Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ProfilePage()),
-          ),
-        ),
-      ],
     );
   }
 
