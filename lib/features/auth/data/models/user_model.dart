@@ -17,6 +17,7 @@ class UserModel {
   final DateTime createdAt;
   final DateTime? lastUpdated;
   final String? fcmToken; // For push notifications
+  final Map<String, dynamic> statistics;
 
   UserModel({
     required this.id,
@@ -34,6 +35,7 @@ class UserModel {
     required this.createdAt,
     this.lastUpdated,
     this.fcmToken,
+    Map<String, dynamic>? statistics,
   })  : linkedBankAccounts = linkedBankAccounts ?? [],
         notificationSettings = notificationSettings ?? {
           'pushEnabled': true,
@@ -42,6 +44,12 @@ class UserModel {
           'savingsReminders': true,
           'loanReminders': true,
           'budgetAlerts': true,
+        },
+        statistics = statistics ?? {
+          'totalIncome': 0.0,
+          'totalExpenses': 0.0,
+          'monthlyBudget': 0.0,
+          'savingsGoal': 0.0,
         };
 
   Map<String, dynamic> toMap() {
@@ -61,6 +69,7 @@ class UserModel {
       'createdAt': createdAt.toIso8601String(),
       'lastUpdated': lastUpdated?.toIso8601String(),
       'fcmToken': fcmToken,
+      'statistics': statistics,
     };
   }
 
@@ -92,6 +101,7 @@ class UserModel {
               : DateTime.parse(map['lastUpdated']))
           : null,
       fcmToken: map['fcmToken'],
+      statistics: Map<String, dynamic>.from(map['statistics'] ?? {}),
     );
   }
 
@@ -111,6 +121,7 @@ class UserModel {
     DateTime? createdAt,
     DateTime? lastUpdated,
     String? fcmToken,
+    Map<String, dynamic>? statistics,
   }) {
     return UserModel(
       id: id ?? this.id,
@@ -128,6 +139,7 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       lastUpdated: lastUpdated ?? this.lastUpdated,
       fcmToken: fcmToken ?? this.fcmToken,
+      statistics: statistics ?? this.statistics,
     );
   }
 } 

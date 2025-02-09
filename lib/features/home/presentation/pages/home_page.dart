@@ -14,6 +14,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 
+// Move enum to top level, outside of any class
+enum AnalysisPeriod { daily, weekly, monthly }
+
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
@@ -28,6 +31,7 @@ class _HomePageState extends State<HomePage> {
     decimalDigits: 2,
   );
   int _currentIndex = 0;
+  AnalysisPeriod _selectedPeriod = AnalysisPeriod.monthly;
 
   @override
   Widget build(BuildContext context) {
@@ -109,22 +113,30 @@ class _HomePageState extends State<HomePage> {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildWelcomeSection(user),
-                    const SizedBox(height: 24),
-                    _buildBalanceCards(user),
-                    const SizedBox(height: 24),
-                    _buildQuickActions(),
-                    const SizedBox(height: 24),
-                    _buildRecentTransactions(),
-                    const SizedBox(height: 24),
-                    _buildSavingsGoalsProgress(user),
-                  ],
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildHeaderGradient(user),
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildBalanceCards(user),
+                        const SizedBox(height: 24),
+                        _buildQuickActions(),
+                        const SizedBox(height: 24),
+                        _buildExpenseChart(),
+                        const SizedBox(height: 24),
+                        _buildRecentTransactions(),
+                        const SizedBox(height: 24),
+                        _buildUpcomingBills(),
+                        const SizedBox(height: 24),
+                        _buildSavingsGoalsProgress(user),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           );
@@ -133,44 +145,455 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildWelcomeSection(UserModel user) {
+  Widget _buildHeaderGradient(UserModel user) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primary,
+            AppColors.primary.withOpacity(0.8),
+          ],
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Hi, ${user.fullName.split(' ')[0]} 👋',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              CircleAvatar(
+                radius: 24,
+                backgroundColor: Colors.white.withOpacity(0.2),
+                backgroundImage: user.photoUrl != null 
+                    ? NetworkImage(user.photoUrl!) 
+                    : null,
+                child: user.photoUrl == null
+                    ? Text(
+                        user.fullName[0].toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      )
+                    : null,
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          Card(
+            elevation: 8,
+            shadowColor: Colors.black26,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Total Balance',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _currencyFormat.format(user.totalBalance),
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _buildBalanceIndicator(
+                        'Income',
+                        user.statistics['totalIncome'] ?? 0.0,
+                        Icons.arrow_upward,
+                        Colors.green,
+                      ),
+                      _buildBalanceIndicator(
+                        'Expenses',
+                        user.statistics['totalExpenses'] ?? 0.0,
+                        Icons.arrow_downward,
+                        Colors.red,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBalanceIndicator(
+    String label,
+    double amount,
+    IconData icon,
+    Color color,
+  ) {
     return Row(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(icon, color: color, size: 16),
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+            Text(
+              _currencyFormat.format(amount),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildExpenseChart() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        color: Colors.grey[50],
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Expense Analysis',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.grey[100],
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildPeriodButton(
+                          'Daily',
+                          isSelected: _selectedPeriod == AnalysisPeriod.daily,
+                          onTap: () => _changePeriod(AnalysisPeriod.daily),
+                        ),
+                        const SizedBox(width: 4),
+                        _buildPeriodButton(
+                          'Weekly',
+                          isSelected: _selectedPeriod == AnalysisPeriod.weekly,
+                          onTap: () => _changePeriod(AnalysisPeriod.weekly),
+                        ),
+                        const SizedBox(width: 4),
+                        _buildPeriodButton(
+                          'Monthly',
+                          isSelected: _selectedPeriod == AnalysisPeriod.monthly,
+                          onTap: () => _changePeriod(AnalysisPeriod.monthly),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(height: 1),
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: _buildPeriodTransactions(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPeriodButton(
+    String text, {
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected ? AppColors.primary : Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: isSelected ? Colors.white : Colors.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _changePeriod(AnalysisPeriod period) {
+    setState(() {
+      _selectedPeriod = period;
+    });
+  }
+
+  Widget _buildPeriodTransactions() {
+    DateTime now = DateTime.now();
+    late DateTime startDate;  // Add late keyword
+    late String periodTitle;  // Add late keyword
+
+    switch (_selectedPeriod) {
+      case AnalysisPeriod.daily:
+        startDate = DateTime(now.year, now.month, now.day);
+        periodTitle = 'Today';
+        break;
+      case AnalysisPeriod.weekly:
+        startDate = now.subtract(Duration(days: now.weekday - 1));
+        periodTitle = 'This Week';
+        break;
+      case AnalysisPeriod.monthly:
+        startDate = DateTime(now.year, now.month, 1);
+        periodTitle = 'This Month';
+        break;
+    }
+
+    return StreamBuilder<List<TransactionModel>>(
+      stream: _db.getTransactionsByDateRange(
+        _db.currentUserId!,
+        startDate,
+        now,
+      ),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return const Center(child: Text('Error loading transactions'));
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final transactions = snapshot.data!;
+
+        if (transactions.isEmpty) {
+          return Center(
+            child: Text('No transactions for $periodTitle'),
+          );
+        }
+
+        return Column(
+          children: transactions.map((transaction) {
+            return Column(
+              children: [
+                _buildExpenseItem(
+                  transaction.category,
+                  DateFormat('HH:mm - MMM dd').format(transaction.date),
+                  transaction.description ?? 'No description',
+                  transaction.amount,
+                  isIncome: transaction.type == TransactionType.income,
+                ),
+                const Divider(),
+              ],
+            );
+          }).toList(),
+        );
+      },
+    );
+  }
+
+  Widget _buildExpenseItem(
+    String title,
+    String time,
+    String category,
+    double amount, {
+    bool isIncome = false,
+  }) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isIncome ? Colors.blue.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isIncome ? Icons.account_balance_wallet : Icons.shopping_bag,
+              color: isIncome ? Colors.blue : Colors.red,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  time,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                'Hi, Welcome Back! 👋',
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
+                isIncome ? '+\$${amount.toStringAsFixed(2)}' : '-\$${amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: isIncome ? Colors.green : Colors.red,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
               const SizedBox(height: 4),
-              Text(
-                user.fullName,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: Colors.grey[600],
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  category,
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildUpcomingBills() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Upcoming Bills',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextButton(
+              onPressed: () {/* TODO: Navigate to bills */},
+              child: const Text('See All'),
+            ),
+          ],
         ),
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.primary.withOpacity(0.1),
-          backgroundImage: user.photoUrl != null 
-              ? NetworkImage(user.photoUrl!) 
-              : null,
-          child: user.photoUrl == null
-              ? Text(
-                  user.fullName[0].toUpperCase(),
-                  style: const TextStyle(
-                    color: AppColors.primary,
+        Card(
+          elevation: 2,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: 3, // Show only 3 upcoming bills
+            itemBuilder: (context, index) {
+              return ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.receipt, color: Colors.blue),
+                ),
+                title: const Text('Electricity Bill'),
+                subtitle: Text(
+                  'Due in ${index + 1} days',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: const Text(
+                  'KES 2,500',
+                  style: TextStyle(
                     fontWeight: FontWeight.bold,
                   ),
-                )
-              : null,
+                ),
+              );
+            },
+          ),
         ),
       ],
     );
@@ -275,43 +698,100 @@ class _HomePageState extends State<HomePage> {
           ),
         ),
         const SizedBox(height: 16),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildQuickActionButton(
-              'Send',
-              Icons.send,
-              () {/* TODO: Implement send */},
-            ),
-            _buildQuickActionButton(
-              'Request',
-              Icons.request_page,
-              () {/* TODO: Implement request */},
-            ),
-            _buildQuickActionButton(
-              'Scan',
-              Icons.qr_code_scanner,
-              () {/* TODO: Implement scan */},
-            ),
-            _buildQuickActionButton(
-              'More',
-              Icons.more_horiz,
-              () {/* TODO: Implement more */},
-            ),
-          ],
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildQuickActionButton(
+                'Send',
+                Icons.send,
+                () {/* TODO: Implement send */},
+              ),
+              const SizedBox(width: 16),
+              _buildQuickActionButton(
+                'Request',
+                Icons.request_page,
+                () {/* TODO: Implement request */},
+              ),
+              const SizedBox(width: 16),
+              _buildQuickActionButton(
+                'Scan',
+                Icons.qr_code_scanner,
+                () {/* TODO: Implement scan */},
+              ),
+              const SizedBox(width: 16),
+              _buildQuickActionButton(
+                'Bills',
+                Icons.receipt_long,
+                () {/* TODO: Implement bills */},
+              ),
+              const SizedBox(width: 16),
+              _buildQuickActionButton(
+                'More',
+                Icons.grid_view,
+                () => _showMoreActions(),
+              ),
+            ],
+          ),
         ),
       ],
     );
   }
 
-  Widget _buildQuickActionButton(
-    String label,
-    IconData icon,
-    VoidCallback onTap,
-  ) {
-    return InkWell(
-      onTap: onTap,
+  void _showMoreActions() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'More Actions',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 24),
+              GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: 4,
+                mainAxisSpacing: 24,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.85,
+                children: [
+                  _buildMoreActionItem('Savings', Icons.savings),
+                  _buildMoreActionItem('Loans', Icons.account_balance),
+                  _buildMoreActionItem('Cards', Icons.credit_card),
+                  _buildMoreActionItem('Invest', Icons.trending_up),
+                  _buildMoreActionItem('Insurance', Icons.security),
+                  _buildMoreActionItem('Airtime', Icons.phone_android),
+                  _buildMoreActionItem('Internet', Icons.wifi),
+                  _buildMoreActionItem('More', Icons.more_horiz),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreActionItem(String label, IconData icon) {
+    return SizedBox(
+      height: 80,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
             padding: const EdgeInsets.all(12),
@@ -328,8 +808,49 @@ class _HomePageState extends State<HomePage> {
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionButton(
+    String label,
+    IconData icon,
+    VoidCallback onTap,
+  ) {
+    return SizedBox(
+      width: 80,
+      height: 80,
+      child: InkWell(
+        onTap: onTap,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: AppColors.primary),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+              textAlign: TextAlign.center,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
       ),
     );
   }
