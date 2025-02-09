@@ -4,12 +4,14 @@ import '../../domain/models/bill.dart';
 import 'package:intl/intl.dart';
 
 class ViewBillsPage extends StatelessWidget {
+  final String userId;
   final bool showPaymentOption;
   final bool filterUpcoming;
   final bool showHistory;
 
   const ViewBillsPage({
     super.key,
+    required this.userId,
     this.showPaymentOption = false,
     this.filterUpcoming = false,
     this.showHistory = false,

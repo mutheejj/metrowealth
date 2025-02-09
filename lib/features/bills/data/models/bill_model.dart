@@ -30,44 +30,35 @@ class BillModel {
   final String userId;
   final String title;
   final double amount;
-  final BillFrequency frequency;
-  final DateTime dueDate;
-  final DateTime? nextDueDate;
-  final bool isAutoPay;
   final String category;
-  final String? description;
-  final String? paymentMethod;
+  final DateTime dueDate;
   final BillStatus status;
-  final ReminderFrequency reminderFrequency;
-  final bool isRecurring;
-  final List<BillPaymentModel> paymentHistory;
-  final String? billerId;
-  final String? accountNumber;
+  final String? description;
+  final String? recurringType;
+  final int? recurringInterval;
+  final DateTime? nextDueDate;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final List<BillPaymentModel> payments;
+  final String? accountNumber;
 
   BillModel({
     required this.id,
     required this.userId,
     required this.title,
     required this.amount,
-    required this.frequency,
-    required this.dueDate,
-    this.nextDueDate,
-    this.isAutoPay = false,
     required this.category,
-    this.description,
-    this.paymentMethod,
+    required this.dueDate,
     this.status = BillStatus.pending,
-    this.reminderFrequency = ReminderFrequency.oneDayBefore,
-    this.isRecurring = true,
-    List<BillPaymentModel>? paymentHistory,
-    this.billerId,
-    this.accountNumber,
-    DateTime? createdAt,
+    this.description,
+    this.recurringType,
+    this.recurringInterval,
+    this.nextDueDate,
+    required this.createdAt,
     this.updatedAt,
-  })  : paymentHistory = paymentHistory ?? [],
-        createdAt = createdAt ?? DateTime.now();
+    this.payments = const [],
+    this.accountNumber,
+  });
 
   Map<String, dynamic> toMap() {
     return {
@@ -75,21 +66,17 @@ class BillModel {
       'userId': userId,
       'title': title,
       'amount': amount,
-      'frequency': frequency.toString(),
-      'dueDate': dueDate.toIso8601String(),
-      'nextDueDate': nextDueDate?.toIso8601String(),
-      'isAutoPay': isAutoPay,
       'category': category,
-      'description': description,
-      'paymentMethod': paymentMethod,
+      'dueDate': dueDate.toIso8601String(),
       'status': status.toString(),
-      'reminderFrequency': reminderFrequency.toString(),
-      'isRecurring': isRecurring,
-      'paymentHistory': paymentHistory.map((p) => p.toMap()).toList(),
-      'billerId': billerId,
-      'accountNumber': accountNumber,
+      'description': description,
+      'recurringType': recurringType,
+      'recurringInterval': recurringInterval,
+      'nextDueDate': nextDueDate?.toIso8601String(),
       'createdAt': createdAt.toIso8601String(),
       'updatedAt': updatedAt?.toIso8601String(),
+      'payments': payments.map((p) => p.toMap()).toList(),
+      'accountNumber': accountNumber,
     };
   }
 
@@ -99,36 +86,19 @@ class BillModel {
       userId: map['userId'] ?? '',
       title: map['title'] ?? '',
       amount: (map['amount'] ?? 0.0).toDouble(),
-      frequency: BillFrequency.values.firstWhere(
-        (e) => e.toString() == map['frequency'],
-        orElse: () => BillFrequency.monthly,
-      ),
+      category: map['category'] ?? '',
       dueDate: map['dueDate'] is Timestamp 
           ? (map['dueDate'] as Timestamp).toDate()
           : DateTime.parse(map['dueDate']),
+      status: BillStatus.values[int.parse(map['status'] ?? '0')],
+      description: map['description'],
+      recurringType: map['recurringType'],
+      recurringInterval: map['recurringInterval'],
       nextDueDate: map['nextDueDate'] != null
           ? map['nextDueDate'] is Timestamp
               ? (map['nextDueDate'] as Timestamp).toDate()
               : DateTime.parse(map['nextDueDate'])
           : null,
-      isAutoPay: map['isAutoPay'] ?? false,
-      category: map['category'] ?? '',
-      description: map['description'],
-      paymentMethod: map['paymentMethod'],
-      status: BillStatus.values.firstWhere(
-        (e) => e.toString() == map['status'],
-        orElse: () => BillStatus.pending,
-      ),
-      reminderFrequency: ReminderFrequency.values.firstWhere(
-        (e) => e.toString() == map['reminderFrequency'],
-        orElse: () => ReminderFrequency.oneDayBefore,
-      ),
-      isRecurring: map['isRecurring'] ?? true,
-      paymentHistory: (map['paymentHistory'] as List<dynamic>?)
-          ?.map((x) => BillPaymentModel.fromMap(x as Map<String, dynamic>))
-          .toList() ?? [],
-      billerId: map['billerId'],
-      accountNumber: map['accountNumber'],
       createdAt: map['createdAt'] is Timestamp 
           ? (map['createdAt'] as Timestamp).toDate()
           : DateTime.parse(map['createdAt']),
@@ -137,6 +107,10 @@ class BillModel {
               ? (map['updatedAt'] as Timestamp).toDate()
               : DateTime.parse(map['updatedAt'])
           : null,
+      payments: (map['payments'] as List<dynamic>?)
+          ?.map((x) => BillPaymentModel.fromMap(x as Map<String, dynamic>))
+          .toList() ?? [],
+      accountNumber: map['accountNumber'],
     );
   }
 
@@ -145,42 +119,69 @@ class BillModel {
     String? userId,
     String? title,
     double? amount,
-    BillFrequency? frequency,
-    DateTime? dueDate,
-    DateTime? nextDueDate,
-    bool? isAutoPay,
     String? category,
-    String? description,
-    String? paymentMethod,
+    DateTime? dueDate,
     BillStatus? status,
-    ReminderFrequency? reminderFrequency,
-    bool? isRecurring,
-    List<BillPaymentModel>? paymentHistory,
-    String? billerId,
-    String? accountNumber,
+    String? description,
+    String? recurringType,
+    int? recurringInterval,
+    DateTime? nextDueDate,
     DateTime? createdAt,
     DateTime? updatedAt,
+    List<BillPaymentModel>? payments,
+    String? accountNumber,
   }) {
     return BillModel(
       id: id ?? this.id,
       userId: userId ?? this.userId,
       title: title ?? this.title,
       amount: amount ?? this.amount,
-      frequency: frequency ?? this.frequency,
-      dueDate: dueDate ?? this.dueDate,
-      nextDueDate: nextDueDate ?? this.nextDueDate,
-      isAutoPay: isAutoPay ?? this.isAutoPay,
       category: category ?? this.category,
-      description: description ?? this.description,
-      paymentMethod: paymentMethod ?? this.paymentMethod,
+      dueDate: dueDate ?? this.dueDate,
       status: status ?? this.status,
-      reminderFrequency: reminderFrequency ?? this.reminderFrequency,
-      isRecurring: isRecurring ?? this.isRecurring,
-      paymentHistory: paymentHistory ?? this.paymentHistory,
-      billerId: billerId ?? this.billerId,
-      accountNumber: accountNumber ?? this.accountNumber,
+      description: description ?? this.description,
+      recurringType: recurringType ?? this.recurringType,
+      recurringInterval: recurringInterval ?? this.recurringInterval,
+      nextDueDate: nextDueDate ?? this.nextDueDate,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      payments: payments ?? this.payments,
+      accountNumber: accountNumber ?? this.accountNumber,
+    );
+  }
+
+  factory BillModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return BillModel(
+      id: doc.id,
+      userId: data['userId'],
+      title: data['title'],
+      amount: (data['amount'] ?? 0.0).toDouble(),
+      category: data['category'],
+      dueDate: data['dueDate'] is Timestamp 
+          ? (data['dueDate'] as Timestamp).toDate()
+          : DateTime.parse(data['dueDate'].toString()),
+      status: BillStatus.values[int.parse(data['status'] ?? '0')],
+      description: data['description'],
+      recurringType: data['recurringType'],
+      recurringInterval: data['recurringInterval'],
+      nextDueDate: data['nextDueDate'] != null
+          ? data['nextDueDate'] is Timestamp
+              ? (data['nextDueDate'] as Timestamp).toDate()
+              : DateTime.parse(data['nextDueDate'].toString())
+          : null,
+      createdAt: data['createdAt'] is Timestamp 
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt'].toString()),
+      updatedAt: data['updatedAt'] != null 
+          ? data['updatedAt'] is Timestamp 
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : DateTime.parse(data['updatedAt'].toString())
+          : null,
+      payments: (data['payments'] as List<dynamic>?)
+          ?.map((x) => BillPaymentModel.fromMap(x as Map<String, dynamic>))
+          .toList() ?? [],
+      accountNumber: data['accountNumber'],
     );
   }
 }

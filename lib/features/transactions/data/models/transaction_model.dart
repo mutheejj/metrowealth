@@ -26,108 +26,92 @@ class TransactionModel {
   final String id;
   final String userId;
   final double amount;
-  final TransactionType type;
+  final String title;
   final String category;
-  final String? description;
+  final TransactionType type;
   final DateTime date;
+  final String? accountId;
+  final String? billId;
+  final String? description;
+  final String? recipientId;
   final String? attachmentUrl;
   final TransactionStatus status;
-  final String? referenceNumber;
-  final String? recipientId;  // For transfers
-  final String? accountId;    // Source/destination account
-  final Map<String, dynamic>? metadata;
   final DateTime createdAt;
-  final DateTime? updatedAt;
+  final DateTime updatedAt;
+  final Map<String, dynamic>? metadata;
 
   TransactionModel({
     required this.id,
     required this.userId,
     required this.amount,
-    required this.type,
+    required this.title,
     required this.category,
-    this.description,
+    required this.type,
     required this.date,
-    this.attachmentUrl,
-    required this.status,
-    this.referenceNumber,
-    this.recipientId,
     this.accountId,
+    this.billId,
+    this.description,
+    this.recipientId,
+    this.attachmentUrl,
+    this.status = TransactionStatus.completed,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     this.metadata,
-    required this.createdAt,
-    this.updatedAt,
-  });
+  }) : 
+    this.createdAt = createdAt ?? DateTime.now(),
+    this.updatedAt = updatedAt ?? DateTime.now();
+
+  factory TransactionModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return TransactionModel(
+      id: doc.id,
+      userId: data['userId'],
+      amount: (data['amount'] ?? 0.0).toDouble(),
+      title: data['title'],
+      category: data['category'],
+      type: TransactionType.values.firstWhere(
+        (e) => e.toString() == data['type'],
+        orElse: () => TransactionType.expense,
+      ),
+      date: data['date'] is Timestamp 
+          ? (data['date'] as Timestamp).toDate()
+          : DateTime.parse(data['date'].toString()),
+      accountId: data['accountId'],
+      billId: data['billId'],
+      description: data['description'],
+      recipientId: data['recipientId'],
+      attachmentUrl: data['attachmentUrl'],
+      status: TransactionStatus.values.firstWhere(
+        (e) => e.toString() == data['status'],
+        orElse: () => TransactionStatus.completed,
+      ),
+      createdAt: data['createdAt'] is Timestamp 
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt'].toString()),
+      updatedAt: data['updatedAt'] is Timestamp 
+          ? (data['updatedAt'] as Timestamp).toDate()
+          : DateTime.parse(data['updatedAt'].toString()),
+      metadata: data['metadata'],
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'userId': userId,
       'amount': amount,
-      'type': type.toString(),
+      'title': title,
       'category': category,
+      'type': type.toString(),
+      'date': date,
+      'accountId': accountId,
+      'billId': billId,
       'description': description,
-      'date': date.toIso8601String(),
+      'recipientId': recipientId,
       'attachmentUrl': attachmentUrl,
       'status': status.toString(),
-      'referenceNumber': referenceNumber,
-      'recipientId': recipientId,
-      'accountId': accountId,
+      'createdAt': createdAt,
+      'updatedAt': updatedAt,
       'metadata': metadata,
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
     };
-  }
-
-  factory TransactionModel.fromMap(Map<String, dynamic> map) {
-    return TransactionModel(
-      id: map['id'] ?? '',
-      userId: map['userId'] ?? '',
-      amount: (map['amount'] ?? 0.0).toDouble(),
-      type: map['type'] == 'TransactionType.expense' 
-          ? TransactionType.expense 
-          : map['type'] == 'TransactionType.income' 
-              ? TransactionType.income 
-              : map['type'] == 'TransactionType.transfer' 
-                  ? TransactionType.transfer 
-                  : map['type'] == 'TransactionType.deposit' 
-                      ? TransactionType.deposit 
-                      : map['type'] == 'TransactionType.withdrawal' 
-                          ? TransactionType.withdrawal 
-                          : map['type'] == 'TransactionType.savingsDeposit' 
-                              ? TransactionType.savingsDeposit 
-                              : map['type'] == 'TransactionType.savingsWithdrawal' 
-                                  ? TransactionType.savingsWithdrawal 
-                                  : map['type'] == 'TransactionType.loanPayment' 
-                                      ? TransactionType.loanPayment 
-                                      : map['type'] == 'TransactionType.loanDisbursement' 
-                                          ? TransactionType.loanDisbursement 
-                                          : map['type'] == 'TransactionType.billPayment' 
-                                              ? TransactionType.billPayment 
-                                              : TransactionType.investment,
-      category: map['category'] ?? '',
-      description: map['description'],
-      date: map['date'] is Timestamp 
-          ? (map['date'] as Timestamp).toDate()
-          : DateTime.parse(map['date']),
-      attachmentUrl: map['attachmentUrl'],
-      status: map['status'] == 'TransactionStatus.pending' 
-          ? TransactionStatus.pending 
-          : map['status'] == 'TransactionStatus.completed' 
-              ? TransactionStatus.completed 
-              : map['status'] == 'TransactionStatus.failed' 
-                  ? TransactionStatus.failed 
-                  : map['status'] == 'TransactionStatus.cancelled' 
-                      ? TransactionStatus.cancelled 
-                      : TransactionStatus.reversed,
-      referenceNumber: map['referenceNumber'],
-      recipientId: map['recipientId'],
-      accountId: map['accountId'],
-      metadata: map['metadata'],
-      createdAt: map['createdAt'] is Timestamp 
-          ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(map['createdAt']),
-      updatedAt: map['updatedAt'] is Timestamp 
-          ? (map['updatedAt'] as Timestamp).toDate()
-          : DateTime.parse(map['updatedAt']),
-    );
   }
 } 

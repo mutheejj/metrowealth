@@ -15,6 +15,13 @@ import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:metrowealth/features/bills/data/models/bill_model.dart';
 import 'package:metrowealth/features/bills/presentation/widgets/bills_action_sheet.dart';
+import 'package:metrowealth/features/home/presentation/widgets/account_balance_card.dart';
+import 'package:metrowealth/features/home/presentation/widgets/quick_actions.dart';
+import 'package:metrowealth/features/home/presentation/widgets/recent_transactions.dart';
+import 'package:metrowealth/features/home/presentation/widgets/spending_insights.dart';
+import 'package:metrowealth/features/home/presentation/widgets/budget_overview.dart';
+import 'package:metrowealth/features/home/presentation/widgets/savings_goals_progress.dart';
+import 'package:metrowealth/features/home/presentation/widgets/bill_reminders.dart';
 
 // Move enum to top level, outside of any class
 enum AnalysisPeriod { daily, weekly, monthly }
@@ -27,70 +34,253 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  final _db = DatabaseService();
+  final DatabaseService _db = DatabaseService();
   final _currencyFormat = NumberFormat.currency(
     symbol: 'KES ',
     decimalDigits: 2,
   );
+  UserModel? _user;
+  bool _isLoading = true;
   int _currentIndex = 0;
   AnalysisPeriod _selectedPeriod = AnalysisPeriod.monthly;
 
   @override
+  void initState() {
+    super.initState();
+    _loadUserData();
+  }
+
+  Future<void> _loadUserData() async {
+    try {
+      final user = await _db.getCurrentUser();
+      setState(() {
+        _user = user;
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() => _isLoading = false);
+      // Show error snackbar
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark.copyWith(
-        statusBarColor: Colors.transparent,
-      ),
-      child: Scaffold(
-        appBar: _buildAppBar(),
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            _buildHomeContent(),
-            const CategoriesPage(),
-            const AnalysisPage(),
-            const TransactionsPage(),
-            const ProfilePage(),
-          ],
-        ),
-        bottomNavigationBar: BottomNavBar(
-          currentIndex: _currentIndex,
-          onTap: (index) => setState(() => _currentIndex = index),
-        ),
+    return Scaffold(
+      backgroundColor: Colors.grey[100],
+      body: _isLoading 
+        ? const Center(child: CircularProgressIndicator())
+        : RefreshIndicator(
+            onRefresh: _loadUserData,
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                _buildAppBar(),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AccountBalanceCard(user: _user),
+                        const SizedBox(height: 20),
+                        QuickActions(onActionSelected: _handleQuickAction),
+                        const SizedBox(height: 20),
+                        SpendingInsights(userId: _user?.id ?? ''),
+                        const SizedBox(height: 20),
+                        BudgetOverview(userId: _user?.id ?? ''),
+                        const SizedBox(height: 20),
+                        SavingsGoalsProgress(userId: _user?.id ?? ''),
+                        const SizedBox(height: 20),
+                        BillReminders(userId: _user?.id ?? ''),
+                        const SizedBox(height: 20),
+                        RecentTransactions(userId: _user?.id ?? ''),
+                        const SizedBox(height: 80),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _currentIndex,
+        onTap: _handleNavigation,
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
+  SliverAppBar _buildAppBar() {
+    return SliverAppBar(
+      expandedHeight: 140.0,
+      floating: true,
+      pinned: true,
+      stretch: true,
+      automaticallyImplyLeading: false,
       backgroundColor: AppColors.primary,
-      elevation: 0,
-      title: Align(
-        alignment: Alignment.centerLeft,
-        child: Image.asset(
-          'assets/images/logo_white.png',
-          height: 30,
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [
+          StretchMode.zoomBackground,
+          StretchMode.blurBackground,
+        ],
+        titlePadding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: 16,
+          top: MediaQuery.of(context).padding.top + 16,
         ),
-      ),
-      centerTitle: false,
-      actions: [
-        IconButton(
-          icon: const Icon(
-            Icons.notifications_outlined,
-            color: Colors.white,
-          ),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const NotificationPage(),
+        title: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: constraints.maxHeight - MediaQuery.of(context).padding.top,
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Welcome back,',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _user?.fullName?.split(' ')[0] ?? 'User',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             );
           },
         ),
-        const SizedBox(width: 8),
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, Color(0xFF8B0000)],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Stack(
+            children: [
+              const Icon(Icons.notifications_outlined, color: Colors.white),
+              Positioned(
+                right: 0,
+                top: 0,
+                child: Container(
+                  padding: const EdgeInsets.all(2),
+                  decoration: const BoxDecoration(
+                    color: Colors.red,
+                    shape: BoxShape.circle,
+                  ),
+                  constraints: const BoxConstraints(
+                    minWidth: 14,
+                    minHeight: 14,
+                  ),
+                  child: const Text(
+                    '2',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 8,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationPage()),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ProfilePage()),
+          ),
+        ),
       ],
     );
+  }
+
+  void _handleQuickAction(String action) {
+    switch (action) {
+      case 'send':
+        // Handle send action
+        break;
+      case 'request':
+        // Handle request action
+        break;
+      case 'scan':
+        // Handle scan action
+        break;
+      case 'bills':
+        _showBillsActions();
+        break;
+    }
+  }
+
+  void _showBillsActions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => BillsActionSheet(userId: _user?.id ?? ''),
+    );
+  }
+
+  void _handleNavigation(int index) {
+    setState(() => _currentIndex = index);
+    switch (index) {
+      case 0: // Home
+        break;
+      case 1: // Analysis
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalysisPage()),
+        );
+        break;
+      case 2: // Categories
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const CategoriesPage()),
+        );
+        break;
+      case 3: // Transactions
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const TransactionsPage()),
+        );
+        break;
+      case 4: // Profile
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+    }
   }
 
   Widget _buildHomeContent() {
@@ -107,7 +297,7 @@ class _HomePageState extends State<HomePage> {
           }
 
           final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          final user = UserModel.fromMap(userData);
+          final user = UserModel.fromFirestore(userSnapshot.data!);
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -170,11 +360,10 @@ class _HomePageState extends State<HomePage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Hi, ${user.fullName.split(' ')[0]} 👋',
+                      'Hi, ${user.fullName?.split(' ')[0] ?? 'User'} 👋',
                       style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -196,11 +385,8 @@ class _HomePageState extends State<HomePage> {
                     : null,
                 child: user.photoUrl == null
                     ? Text(
-                        user.fullName[0].toUpperCase(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        user.fullName?[0].toUpperCase() ?? 'U',
+                        style: const TextStyle(fontSize: 24),
                       )
                     : null,
               ),
@@ -239,13 +425,13 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       _buildBalanceIndicator(
                         'Income',
-                        user.statistics['totalIncome'] ?? 0.0,
+                        user.statistics?['totalIncome']?.toDouble() ?? 0.0,
                         Icons.arrow_upward,
                         Colors.green,
                       ),
                       _buildBalanceIndicator(
                         'Expenses',
-                        user.statistics['totalExpenses'] ?? 0.0,
+                        user.statistics?['totalExpenses']?.toDouble() ?? 0.0,
                         Icons.arrow_downward,
                         Colors.red,
                       ),
@@ -665,12 +851,12 @@ class _HomePageState extends State<HomePage> {
     switch (status) {
       case BillStatus.paid:
         return Colors.green;
-      case BillStatus.pending:
-        return Colors.orange;
       case BillStatus.overdue:
         return Colors.red;
       case BillStatus.cancelled:
         return Colors.grey;
+      default:
+        return Colors.orange;
     }
   }
 
@@ -1072,17 +1258,6 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showBillsActions() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => BillsActionSheet(),
     );
   }
 

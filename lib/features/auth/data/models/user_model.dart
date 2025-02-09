@@ -3,8 +3,11 @@ import 'package:flutter/foundation.dart';
 
 class UserModel {
   final String id;
-  final String fullName;
+  final String? fullName;
   final String email;
+  final double balance;
+  final double monthlyIncome;
+  final double monthlyExpenses;
   final String? photoUrl;
   final String? mobileNumber;
   final DateTime? dateOfBirth;
@@ -12,17 +15,18 @@ class UserModel {
   final double totalBalance;
   final double savingsBalance;
   final double loanBalance;
-  final List<String> linkedBankAccounts;
-  final Map<String, dynamic> notificationSettings;
-  final DateTime createdAt;
   final DateTime? lastUpdated;
-  final String? fcmToken; // For push notifications
-  final Map<String, dynamic> statistics;
+  final String? fcmToken;
+  final Map<String, dynamic>? statistics;
+  final DateTime createdAt;
 
   UserModel({
     required this.id,
-    required this.fullName,
+    this.fullName,
     required this.email,
+    this.balance = 0.0,
+    this.monthlyIncome = 0.0,
+    this.monthlyExpenses = 0.0,
     this.photoUrl,
     this.mobileNumber,
     this.dateOfBirth,
@@ -30,116 +34,59 @@ class UserModel {
     this.totalBalance = 0.0,
     this.savingsBalance = 0.0,
     this.loanBalance = 0.0,
-    List<String>? linkedBankAccounts,
-    Map<String, dynamic>? notificationSettings,
-    required this.createdAt,
     this.lastUpdated,
     this.fcmToken,
-    Map<String, dynamic>? statistics,
-  })  : linkedBankAccounts = linkedBankAccounts ?? [],
-        notificationSettings = notificationSettings ?? {
-          'pushEnabled': true,
-          'emailEnabled': true,
-          'transactionAlerts': true,
-          'savingsReminders': true,
-          'loanReminders': true,
-          'budgetAlerts': true,
-        },
-        statistics = statistics ?? {
-          'totalIncome': 0.0,
-          'totalExpenses': 0.0,
-          'monthlyBudget': 0.0,
-          'savingsGoal': 0.0,
-        };
+    this.statistics,
+    required this.createdAt,
+  });
+
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return UserModel(
+      id: doc.id,
+      fullName: data['fullName'],
+      email: data['email'],
+      balance: (data['balance'] ?? 0.0).toDouble(),
+      monthlyIncome: (data['monthlyIncome'] ?? 0.0).toDouble(),
+      monthlyExpenses: (data['monthlyExpenses'] ?? 0.0).toDouble(),
+      photoUrl: data['photoUrl'],
+      mobileNumber: data['mobileNumber'],
+      dateOfBirth: data['dateOfBirth'] != null 
+          ? (data['dateOfBirth'] as Timestamp).toDate()
+          : null,
+      address: data['address'],
+      totalBalance: (data['totalBalance'] ?? 0.0).toDouble(),
+      savingsBalance: (data['savingsBalance'] ?? 0.0).toDouble(),
+      loanBalance: (data['loanBalance'] ?? 0.0).toDouble(),
+      lastUpdated: data['lastUpdated'] != null 
+          ? (data['lastUpdated'] as Timestamp).toDate()
+          : null,
+      fcmToken: data['fcmToken'],
+      statistics: data['statistics'],
+      createdAt: data['createdAt'] != null 
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.now(),
+    );
+  }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
       'fullName': fullName,
       'email': email,
+      'balance': balance,
+      'monthlyIncome': monthlyIncome,
+      'monthlyExpenses': monthlyExpenses,
       'photoUrl': photoUrl,
       'mobileNumber': mobileNumber,
-      'dateOfBirth': dateOfBirth?.toIso8601String(),
+      'dateOfBirth': dateOfBirth,
       'address': address,
       'totalBalance': totalBalance,
       'savingsBalance': savingsBalance,
       'loanBalance': loanBalance,
-      'linkedBankAccounts': linkedBankAccounts,
-      'notificationSettings': notificationSettings,
-      'createdAt': createdAt.toIso8601String(),
-      'lastUpdated': lastUpdated?.toIso8601String(),
+      'lastUpdated': lastUpdated,
       'fcmToken': fcmToken,
       'statistics': statistics,
+      'createdAt': createdAt,
     };
-  }
-
-  factory UserModel.fromMap(Map<String, dynamic> map) {
-    return UserModel(
-      id: map['id'] ?? '',
-      fullName: map['fullName'] ?? '',
-      email: map['email'] ?? '',
-      photoUrl: map['photoUrl'],
-      mobileNumber: map['mobileNumber'],
-      dateOfBirth: map['dateOfBirth'] != null 
-          ? (map['dateOfBirth'] is Timestamp 
-              ? (map['dateOfBirth'] as Timestamp).toDate()
-              : DateTime.parse(map['dateOfBirth']))
-          : null,
-      address: map['address'],
-      totalBalance: map['totalBalance']?.toDouble() ?? 0.0,
-      savingsBalance: map['savingsBalance']?.toDouble() ?? 0.0,
-      loanBalance: map['loanBalance']?.toDouble() ?? 0.0,
-      linkedBankAccounts: List<String>.from(map['linkedBankAccounts'] ?? []),
-      notificationSettings: Map<String, dynamic>.from(
-          map['notificationSettings'] ?? {}),
-      createdAt: map['createdAt'] is Timestamp 
-          ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(map['createdAt']),
-      lastUpdated: map['lastUpdated'] != null 
-          ? (map['lastUpdated'] is Timestamp 
-              ? (map['lastUpdated'] as Timestamp).toDate()
-              : DateTime.parse(map['lastUpdated']))
-          : null,
-      fcmToken: map['fcmToken'],
-      statistics: Map<String, dynamic>.from(map['statistics'] ?? {}),
-    );
-  }
-
-  UserModel copyWith({
-    String? id,
-    String? fullName,
-    String? email,
-    String? photoUrl,
-    String? mobileNumber,
-    DateTime? dateOfBirth,
-    String? address,
-    double? totalBalance,
-    double? savingsBalance,
-    double? loanBalance,
-    List<String>? linkedBankAccounts,
-    Map<String, dynamic>? notificationSettings,
-    DateTime? createdAt,
-    DateTime? lastUpdated,
-    String? fcmToken,
-    Map<String, dynamic>? statistics,
-  }) {
-    return UserModel(
-      id: id ?? this.id,
-      fullName: fullName ?? this.fullName,
-      email: email ?? this.email,
-      photoUrl: photoUrl ?? this.photoUrl,
-      mobileNumber: mobileNumber ?? this.mobileNumber,
-      dateOfBirth: dateOfBirth ?? this.dateOfBirth,
-      address: address ?? this.address,
-      totalBalance: totalBalance ?? this.totalBalance,
-      savingsBalance: savingsBalance ?? this.savingsBalance,
-      loanBalance: loanBalance ?? this.loanBalance,
-      linkedBankAccounts: linkedBankAccounts ?? this.linkedBankAccounts,
-      notificationSettings: notificationSettings ?? this.notificationSettings,
-      createdAt: createdAt ?? this.createdAt,
-      lastUpdated: lastUpdated ?? this.lastUpdated,
-      fcmToken: fcmToken ?? this.fcmToken,
-      statistics: statistics ?? this.statistics,
-    );
   }
 } 

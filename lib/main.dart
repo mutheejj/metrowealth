@@ -1,6 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/services/firebase_service.dart';
 import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_container.dart';
+import 'package:metrowealth/features/bills/presentation/pages/bills_page.dart';
+import 'package:metrowealth/features/budget/presentation/pages/budget_page.dart';
+import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
+import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
+import 'package:metrowealth/features/notifications/presentation/pages/notification_page.dart';
+import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,7 +27,16 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFB71C1C)),
         useMaterial3: true,
       ),
-      home: const SplashScreen(),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => const HomeContainer(),
+        '/bills': (context) => const BillsPage(),
+        '/budget': (context) => const BudgetPage(),
+        '/savings': (context) => const SavingsPage(),
+        '/categories': (context) => const CategoriesPage(),
+        '/notifications': (context) => const NotificationPage(),
+        '/profile': (context) => const ProfilePage(),
+      },
     );
   }
 }

@@ -88,6 +88,37 @@ class SavingsGoalModel {
           : null,
     );
   }
+
+  factory SavingsGoalModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>;
+    return SavingsGoalModel(
+      id: doc.id,
+      userId: data['userId'],
+      title: data['title'],
+      name: data['name'],
+      icon: data['icon'],
+      targetAmount: (data['targetAmount'] ?? 0.0).toDouble(),
+      currentAmount: (data['currentAmount'] ?? 0.0).toDouble(),
+      savedAmount: (data['savedAmount'] ?? 0.0).toDouble(),
+      targetDate: data['targetDate'] is Timestamp 
+          ? (data['targetDate'] as Timestamp).toDate()
+          : DateTime.parse(data['targetDate'].toString()),
+      category: data['category'],
+      description: data['description'],
+      isCompleted: data['isCompleted'] ?? false,
+      contributions: (data['contributions'] as List<dynamic>?)
+          ?.map((x) => ContributionModel.fromMap(x as Map<String, dynamic>))
+          .toList() ?? [],
+      createdAt: data['createdAt'] is Timestamp 
+          ? (data['createdAt'] as Timestamp).toDate()
+          : DateTime.parse(data['createdAt'].toString()),
+      updatedAt: data['updatedAt'] != null 
+          ? data['updatedAt'] is Timestamp 
+              ? (data['updatedAt'] as Timestamp).toDate()
+              : DateTime.parse(data['updatedAt'].toString())
+          : null,
+    );
+  }
 }
 
 class ContributionModel {
