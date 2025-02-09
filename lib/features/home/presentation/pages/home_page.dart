@@ -13,6 +13,8 @@ import 'package:metrowealth/features/notifications/presentation/pages/notificati
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
+import 'package:metrowealth/features/bills/data/models/bill_model.dart';
+import 'package:metrowealth/features/bills/presentation/widgets/bills_action_sheet.dart';
 
 // Move enum to top level, outside of any class
 enum AnalysisPeriod { daily, weekly, monthly }
@@ -540,63 +542,281 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildUpcomingBills() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return StreamBuilder<List<BillModel>>(
+      stream: _db.getUpcomingBills(_db.currentUserId!),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
+                const SizedBox(height: 8),
+                Text(
+                  'Error loading bills',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(
+            child: SizedBox(
+              height: 24,
+              width: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        }
+
+        final bills = snapshot.data!;
+
+        if (bills.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.receipt_long_outlined,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'No upcoming bills',
+                  style: TextStyle(color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: bills.length,
+          itemBuilder: (context, index) {
+            final bill = bills[index];
+            return _buildBillItem(bill);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBillItem(BillModel bill) {
+    final daysUntilDue = bill.dueDate.difference(DateTime.now()).inDays;
+    final isOverdue = daysUntilDue < 0;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: ListTile(
+        onTap: () => _showBillDetails(bill),
+        leading: Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: _getBillStatusColor(bill.status).withOpacity(0.1),
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.receipt_outlined,
+            color: _getBillStatusColor(bill.status),
+          ),
+        ),
+        title: Text(
+          bill.title,
+          style: const TextStyle(fontWeight: FontWeight.w500),
+        ),
+        subtitle: Text(
+          isOverdue 
+              ? 'Overdue by ${-daysUntilDue} days'
+              : 'Due in $daysUntilDue days',
+          style: TextStyle(
+            color: isOverdue ? Colors.red : Colors.grey[600],
+            fontSize: 12,
+          ),
+        ),
+        trailing: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
             Text(
-              'Upcoming Bills',
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              _currencyFormat.format(bill.amount),
+              style: const TextStyle(
                 fontWeight: FontWeight.bold,
               ),
             ),
-            TextButton(
-              onPressed: () {/* TODO: Navigate to bills */},
-              child: const Text('See All'),
+            Text(
+              DateFormat('MMM d').format(bill.dueDate),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
             ),
           ],
         ),
-        Card(
-          elevation: 2,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: 3, // Show only 3 upcoming bills
-            itemBuilder: (context, index) {
-              return ListTile(
-                leading: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.receipt, color: Colors.blue),
-                ),
-                title: const Text('Electricity Bill'),
-                subtitle: Text(
-                  'Due in ${index + 1} days',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
-                ),
-                trailing: const Text(
-                  'KES 2,500',
-                  style: TextStyle(
+      ),
+    );
+  }
+
+  Color _getBillStatusColor(BillStatus status) {
+    switch (status) {
+      case BillStatus.paid:
+        return Colors.green;
+      case BillStatus.pending:
+        return Colors.orange;
+      case BillStatus.overdue:
+        return Colors.red;
+      case BillStatus.cancelled:
+        return Colors.grey;
+    }
+  }
+
+  void _showBillDetails(BillModel bill) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  bill.title,
+                  style: const TextStyle(
+                    fontSize: 20,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-              );
-            },
-          ),
+                IconButton(
+                  icon: const Icon(Icons.close),
+                  onPressed: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+            _buildBillDetailRow('Amount', _currencyFormat.format(bill.amount)),
+            _buildBillDetailRow('Due Date', DateFormat('MMM d, y').format(bill.dueDate)),
+            _buildBillDetailRow('Status', bill.status.toString().split('.').last),
+            _buildBillDetailRow('Category', bill.category),
+            if (bill.description != null)
+              _buildBillDetailRow('Description', bill.description!),
+            if (bill.accountNumber != null)
+              _buildBillDetailRow('Account Number', bill.accountNumber!),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => _payBill(bill),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    child: const Text('Pay Now'),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                IconButton(
+                  onPressed: () => _editBill(bill),
+                  icon: const Icon(Icons.edit_outlined),
+                ),
+                IconButton(
+                  onPressed: () => _deleteBill(bill),
+                  icon: const Icon(Icons.delete_outline),
+                  color: Colors.red,
+                ),
+              ],
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
-      ],
+      ),
     );
+  }
+
+  Widget _buildBillDetailRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              color: Colors.grey[600],
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _payBill(BillModel bill) async {
+    // TODO: Implement bill payment
+    Navigator.pop(context);
+    // Navigate to payment page or show payment modal
+  }
+
+  Future<void> _editBill(BillModel bill) async {
+    Navigator.pop(context);
+    // Navigate to edit bill page
+  }
+
+  Future<void> _deleteBill(BillModel bill) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Bill'),
+        content: Text('Are you sure you want to delete ${bill.title}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await _db.deleteBill(bill.id);
+        if (mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Bill deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting bill: $e')),
+          );
+        }
+      }
+    }
   }
 
   Widget _buildBalanceCards(UserModel user) {
@@ -723,7 +943,7 @@ class _HomePageState extends State<HomePage> {
               _buildQuickActionButton(
                 'Bills',
                 Icons.receipt_long,
-                () {/* TODO: Implement bills */},
+                () => _showBillsActions(),
               ),
               const SizedBox(width: 16),
               _buildQuickActionButton(
@@ -852,6 +1072,17 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       ),
+    );
+  }
+
+  void _showBillsActions() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => BillsActionSheet(),
     );
   }
 

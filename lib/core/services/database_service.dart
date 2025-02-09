@@ -56,12 +56,11 @@ class DatabaseService {
     try {
       debugPrint('Starting user profile creation for ID: ${user.id}');
       
-      // Create main user document first
+      // Create basic user document first
       await _db.collection('users').doc(user.id).set({
         'id': user.id,
         'fullName': user.fullName,
         'email': user.email,
-        'createdAt': FieldValue.serverTimestamp(),
       });
 
       debugPrint('Basic user profile created successfully');
@@ -91,6 +90,7 @@ class DatabaseService {
           'monthlyBudget': 0.0,
           'savingsGoal': 0.0,
         },
+        'createdAt': FieldValue.serverTimestamp(),
         'lastUpdated': FieldValue.serverTimestamp(),
       });
 
@@ -294,14 +294,17 @@ class DatabaseService {
     try {
       var query = _db
           .collection('transactions')
-          .where('userId', isEqualTo: userId)
-          .where('date', isGreaterThanOrEqualTo: startDate)
-          .where('date', isLessThanOrEqualTo: endDate)
-          .orderBy('date', descending: true);
+          .where('userId', isEqualTo: userId);
 
       if (type != null) {
         query = query.where('type', isEqualTo: type.toString());
       }
+
+      query = query
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .where('date', isLessThanOrEqualTo: endDate)
+          .orderBy('date', descending: true)
+          .orderBy('__name__', descending: true);
 
       if (category != null) {
         query = query.where('category', isEqualTo: category);
@@ -607,14 +610,132 @@ class DatabaseService {
     }
   }
 
+  Future<void> updateBill(BillModel bill) async {
+    try {
+      await _db.collection('bills').doc(bill.id).update(bill.toMap());
+    } catch (e) {
+      debugPrint('Error updating bill: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> deleteBill(String billId) async {
+    try {
+      // Delete the bill document
+      await _db.collection('bills').doc(billId).delete();
+
+      // Delete any associated payments or references
+      final paymentsQuery = _db.collection('transactions')
+          .where('billId', isEqualTo: billId);
+      
+      final paymentsSnapshot = await paymentsQuery.get();
+      
+      final batch = _db.batch();
+      for (var doc in paymentsSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error deleting bill: $e');
+      rethrow;
+    }
+  }
+
   Stream<List<BillModel>> getUpcomingBills(String userId) {
     final now = DateTime.now();
     return _db
         .collection('bills')
         .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: BillStatus.pending.toString())
         .where('dueDate', isGreaterThanOrEqualTo: now)
         .orderBy('dueDate')
+        .orderBy('__name__')
         .limit(5)
+        .snapshots()
+        .handleError((error) {
+          debugPrint('Error getting upcoming bills: $error');
+          return Stream.value([]);
+        })
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => BillModel.fromMap(doc.data())).toList());
+  }
+
+  Stream<List<BillModel>> getUserBills(String userId) {
+    return _db
+        .collection('bills')
+        .where('userId', isEqualTo: userId)
+        .orderBy('dueDate', descending: true)
+        .snapshots()
+        .handleError((error) {
+          debugPrint('Error getting user bills: $error');
+          return Stream.value([]);  // Return empty list on error
+        })
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => BillModel.fromMap(doc.data())).toList());
+  }
+
+  Future<void> payBill(BillModel bill, BillPaymentModel payment) async {
+    try {
+      final batch = _db.batch();
+
+      // Update bill status and payment history
+      final billRef = _db.collection('bills').doc(bill.id);
+      final updatedBill = bill.copyWith(
+        status: BillStatus.paid,
+        paymentHistory: [...bill.paymentHistory, payment],
+      );
+      batch.update(billRef, updatedBill.toMap());
+
+      // Create transaction record
+      final transactionRef = _db.collection('transactions').doc(payment.id);
+      final transaction = TransactionModel(
+        id: payment.id,
+        userId: bill.userId,
+        amount: payment.amount,
+        type: TransactionType.billPayment,
+        category: 'Bill Payment',
+        description: 'Payment for ${bill.title}',
+        date: payment.paymentDate,
+        attachmentUrl: payment.receipt,
+        status: TransactionStatus.completed,
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+        metadata: {
+          'billId': bill.id,
+          'billTitle': bill.title,
+          'paymentId': payment.id,
+          'isAutoPay': payment.isAutoPayment,
+        },
+      );
+      batch.set(transactionRef, transaction.toMap());
+
+      // Update user balance
+      final userRef = _db.collection('users').doc(bill.userId);
+      batch.update(userRef, {
+        'totalBalance': FieldValue.increment(-payment.amount),
+        'statistics.totalExpenses': FieldValue.increment(payment.amount),
+      });
+
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error paying bill: $e');
+      rethrow;
+    }
+  }
+
+  // Get bills due soon for notifications
+  Stream<List<BillModel>> getBillsDueSoon(String userId, {int daysThreshold = 3}) {
+    final now = DateTime.now();
+    final threshold = now.add(Duration(days: daysThreshold));
+    
+    return _db
+        .collection('bills')
+        .where('userId', isEqualTo: userId)
+        .where('status', isEqualTo: BillStatus.pending.toString())
+        .where('dueDate', isGreaterThanOrEqualTo: now)
+        .where('dueDate', isLessThanOrEqualTo: threshold)
+        .orderBy('dueDate')
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => BillModel.fromMap(doc.data())).toList());
