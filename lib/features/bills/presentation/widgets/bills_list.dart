@@ -49,7 +49,19 @@ class BillsList extends StatelessWidget {
           backgroundColor: _getCategoryColor(bill.category),
           child: Icon(_getCategoryIcon(bill.category), color: Colors.white),
         ),
-        title: Text(bill.title),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(bill.title),
+            Text(
+              DateFormat('MMM d, y').format(bill.dueDate),
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[600],
+              ),
+            ),
+          ],
+        ),
         subtitle: Text(
           'Due: ${DateFormat('MMM d, y').format(bill.dueDate)}',
         ),

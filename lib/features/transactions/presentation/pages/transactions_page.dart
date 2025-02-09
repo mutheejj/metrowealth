@@ -53,149 +53,89 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Total Balance Card
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                const Text(
-                  'Total Balance',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 16,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  currencyFormat.format(7783.00),
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Income/Expense Summary Cards
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0),
-            child: Row(
-              children: [
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedTab = 1),
-                    child: _buildSummaryCard(
-                      title: 'Income',
-                      amount: 4120.00,
-                      isIncome: true,
-                      isSelected: _selectedTab == 1,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: GestureDetector(
-                    onTap: () => setState(() => _selectedTab = 2),
-                    child: _buildSummaryCard(
-                      title: 'Expense',
-                      amount: 1187.40,
-                      isIncome: false,
-                      isSelected: _selectedTab == 2,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Transactions List
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.only(top: 24),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
-              ),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: _buildTransactionsList(),
-              ),
-            ),
-          ),
-        ],
+      body: _buildBody(),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 3, // Transactions is the fourth tab
+        onTap: _handleNavigation,
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
+    );
+  }
+
+  Widget _buildBody() {
+    return Column(
+      children: [
+        // Total Balance Card
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              const Text(
+                'Total Balance',
+                style: TextStyle(
+                  color: Colors.white70,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                currencyFormat.format(7783.00),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
-                  },
+
+        // Income/Expense Summary Cards
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0),
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedTab = 1),
+                  child: _buildSummaryCard(
+                    title: 'Income',
+                    amount: 4120.00,
+                    isIncome: true,
+                    isSelected: _selectedTab == 1,
+                  ),
                 ),
-                buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                    );
-                  },
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _selectedTab = 2),
+                  child: _buildSummaryCard(
+                    title: 'Expense',
+                    amount: 1187.40,
+                    isIncome: false,
+                    isSelected: _selectedTab == 2,
+                  ),
                 ),
-                buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: true, // Transactions page is selected
-                  onTap: () {}, // Already on transactions page
-                ),
-                buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AnalysisPage()),
-                    );
-                  },
-                ),
-                buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage()),
-                    );
-                  },
-                ),
-              ],
+              ),
+            ],
+          ),
+        ),
+
+        // Transactions List
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.only(top: 24),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(32)),
+            ),
+            child: ListView(
+              padding: const EdgeInsets.all(16),
+              children: _buildTransactionsList(),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -459,5 +399,36 @@ class _TransactionsPageState extends State<TransactionsPage> {
         ],
       ),
     );
+  }
+
+  void _handleNavigation(int index) {
+    if (index == 3) return; // Already on transactions page
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CategoriesPage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalysisPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+    }
   }
 }

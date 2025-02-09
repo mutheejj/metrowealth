@@ -563,12 +563,7 @@ class DatabaseService {
 
   // Savings Goals Methods
   Future<void> createSavingsGoal(SavingsGoalModel goal) async {
-    try {
-      await _db.collection('savings_goals').doc(goal.id).set(goal.toMap());
-    } catch (e) {
-      debugPrint('Error creating savings goal: $e');
-      rethrow;
-    }
+    await _db.collection('savings_goals').doc(goal.id).set(goal.toFirestore());
   }
 
   Stream<List<SavingsGoalModel>> getSavingsGoals(String userId) {

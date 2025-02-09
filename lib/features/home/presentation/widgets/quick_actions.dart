@@ -1,24 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/bills/presentation/widgets/bills_action_sheet.dart';
+import 'package:metrowealth/features/payments/presentation/widgets/send_money_sheet.dart';
+import 'package:metrowealth/features/payments/presentation/widgets/request_money_sheet.dart';
+import 'package:metrowealth/features/payments/presentation/widgets/deposit_sheet.dart';
+import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
+import 'package:metrowealth/core/services/database_service.dart';
 
 class QuickActions extends StatelessWidget {
   final Function(String) onActionSelected;
 
-  const QuickActions({
-    Key? key,
-    required this.onActionSelected,
-  }) : super(key: key);
+  const QuickActions({super.key, required this.onActionSelected});
+
+  static const _quickActions = [
+    {
+      'id': 'send',
+      'name': 'Send',
+      'icon': Icons.send,
+    },
+    {
+      'id': 'savings',
+      'name': 'Savings',
+      'icon': Icons.savings,
+    },
+    {
+      'id': 'deposit',
+      'name': 'Deposit',
+      'icon': Icons.account_balance_wallet,
+    },
+    {
+      'id': 'bills',
+      'name': 'Bills',
+      'icon': Icons.receipt_long,
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quick Actions',
-          style: TextStyle(
-            fontSize: 18,
+          style: Theme.of(context).textTheme.titleMedium?.copyWith(
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -27,28 +51,28 @@ class QuickActions extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
             _buildActionItem(
-              'Send',
-              Icons.send_rounded,
-              AppColors.primary,
-              () => onActionSelected('send'),
+              context,
+              icon: Icons.send,
+              label: 'Send',
+              onTap: () => _showSendMoneySheet(context),
             ),
             _buildActionItem(
-              'Request',
-              Icons.request_page_rounded,
-              Colors.green,
-              () => onActionSelected('request'),
+              context,
+              icon: Icons.savings,
+              label: 'Savings',
+              onTap: () => _navigateToSavings(context),
             ),
             _buildActionItem(
-              'Scan',
-              Icons.qr_code_scanner_rounded,
-              Colors.purple,
-              () => onActionSelected('scan'),
+              context,
+              icon: Icons.account_balance_wallet,
+              label: 'Deposit',
+              onTap: () => _showDepositSheet(context),
             ),
             _buildActionItem(
-              'Bills',
-              Icons.receipt_long_rounded,
-              Colors.orange,
-              () => _handleBillsAction(),
+              context,
+              icon: Icons.receipt_long,
+              label: 'Bills',
+              onTap: () => _showBillsActionSheet(context),
             ),
           ],
         ),
@@ -56,12 +80,43 @@ class QuickActions extends StatelessWidget {
     );
   }
 
+  void _showSendMoneySheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const SendMoneySheet(),
+    );
+  }
+
+  void _navigateToSavings(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SavingsPage()),
+    );
+  }
+
+  void _showDepositSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => const DepositSheet(),
+    );
+  }
+
+  void _showBillsActionSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => BillsActionSheet(userId: DatabaseService().currentUserId!),
+    );
+  }
+
   Widget _buildActionItem(
-    String title,
-    IconData icon,
-    Color color,
-    VoidCallback onTap,
-  ) {
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -69,29 +124,24 @@ class QuickActions extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
               icon,
-              color: color,
+              color: Theme.of(context).colorScheme.primary,
               size: 24,
             ),
           ),
           const SizedBox(height: 8),
           Text(
-            title,
-            style: const TextStyle(
-              fontSize: 14,
+            label,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               fontWeight: FontWeight.w500,
             ),
           ),
         ],
       ),
     );
-  }
-
-  void _handleBillsAction() {
-    onActionSelected('bills'); // Let the parent handle the bills action
   }
 } 

@@ -234,68 +234,9 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: true, // Keep categories selected since savings is under it
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TransactionsPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AnalysisPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfilePage()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 0, // Home tab
+        onTap: _handleNavigation,
       ),
     );
   }
@@ -344,12 +285,14 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
           userId: _db.currentUserId!,
           title: _nameController.text,
           name: _nameController.text,
-          icon: _selectedIcon,
+          description: _descriptionController.text,
           targetAmount: double.parse(_targetAmountController.text),
           currentAmount: 0,
           savedAmount: 0,
           targetDate: _targetDate,
-          description: _descriptionController.text,
+          createdAt: DateTime.now(),
+          status: SavingsGoalStatus.active,
+          icon: _selectedIcon,
         );
 
         await _db.createSavingsGoal(newGoal);
@@ -371,6 +314,41 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
           });
         }
       }
+    }
+  }
+
+  void _handleNavigation(int index) {
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CategoriesPage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalysisPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TransactionsPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
     }
   }
 } 

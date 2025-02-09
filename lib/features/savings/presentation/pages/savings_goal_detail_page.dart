@@ -11,6 +11,10 @@ import 'package:metrowealth/features/transactions/presentation/pages/transaction
 import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 import 'package:metrowealth/features/notifications/presentation/pages/notification_page.dart';
+import 'package:metrowealth/features/savings/data/services/database_service.dart';
+import 'package:metrowealth/features/savings/data/models/contribution_model.dart';
+import 'package:metrowealth/features/savings/presentation/pages/edit_savings_goal_page.dart';
+import 'package:metrowealth/features/savings/presentation/widgets/add_contribution_sheet.dart';
 
 class SavingsGoalDetailPage extends StatefulWidget {
   final SavingsGoalModel goal;
@@ -25,7 +29,7 @@ class SavingsGoalDetailPage extends StatefulWidget {
 }
 
 class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
-  final currencyFormat = NumberFormat.currency(symbol: 'KES ');
+  final currencyFormat = NumberFormat.currency(symbol: 'KES ', decimalDigits: 2);
 
   final List<SavingsDeposit> _deposits = [
     SavingsDeposit(
@@ -50,255 +54,223 @@ class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
     final progress = widget.goal.savedAmount / widget.goal.targetAmount;
 
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: SafeArea(
+      appBar: AppBar(
+        title: const Text('Goal Details'),
+        actions: [
+          PopupMenuButton<String>(
+            onSelected: _handleMenuAction,
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'edit',
+                child: Text('Edit Goal'),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Text('Delete Goal'),
+              ),
+            ],
+          ),
+        ],
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(20.0),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                  Expanded(
-                    child: Text(
-                      widget.goal.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => const NotificationPage()),
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-
-            // Goal Info Section
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.blue[100],
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Icon(
-                      _getIconData(widget.goal.icon),
-                      size: 40,
-                      color: Colors.blue[900],
-                    ),
-                  ),
-                  const SizedBox(width: 20),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Goal',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
-                          ),
-                        ),
-                        Text(
-                          currencyFormat.format(widget.goal.targetAmount),
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 24,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Amount Saved',
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(widget.goal.savedAmount),
-                        style: const TextStyle(
-                          color: Colors.green,
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Progress Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.white24,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${(progress * 100).toStringAsFixed(0)}% of Your Goal',
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            // Deposits List
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'April',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Expanded(
-                      child: ListView.builder(
-                        itemCount: _deposits.length,
-                        itemBuilder: (context, index) => _buildDepositItem(_deposits[index]),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _showAddDepositDialog,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text(
-                          'Add Savings',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            _buildHeader(),
+            const SizedBox(height: 24),
+            _buildProgress(),
+            const SizedBox(height: 24),
+            _buildDetails(),
+            const SizedBox(height: 24),
+            _buildContributions(),
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -3),
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddContributionSheet,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Contribution'),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.all(20.0),
+      child: Row(
+        children: [
+          IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          Expanded(
+            child: Text(
+              widget.goal.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
             ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
+          ),
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const NotificationPage()),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgress() {
+    final progress = widget.goal.savedAmount / widget.goal.targetAmount;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.white24,
+              valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+              minHeight: 8,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            '${(progress * 100).toStringAsFixed(0)}% of Your Goal',
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDetails() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.blue[100],
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Icon(
+              _getIconData(widget.goal.icon),
+              size: 40,
+              color: Colors.blue[900],
+            ),
+          ),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
+                Text(
+                  'Goal',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.7),
+                    fontSize: 14,
                   ),
                 ),
-                buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: true, // Keep categories selected
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TransactionsPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const AnalysisPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfilePage()),
+                Text(
+                  currencyFormat.format(widget.goal.targetAmount),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'Amount Saved',
+                style: TextStyle(
+                  color: Colors.white.withOpacity(0.7),
+                  fontSize: 14,
+                ),
+              ),
+              Text(
+                currencyFormat.format(widget.goal.savedAmount),
+                style: const TextStyle(
+                  color: Colors.green,
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContributions() {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(30),
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'April',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey[800],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _buildContributionsList(),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _showAddDepositDialog,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Add Savings',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -384,5 +356,211 @@ class _SavingsGoalDetailPageState extends State<SavingsGoalDetailPage> {
         });
       }
     });
+  }
+
+  void _handleMenuAction(String value) async {
+    switch (value) {
+      case 'edit':
+        final result = await Navigator.push<SavingsGoalModel>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EditSavingsGoalPage(goal: widget.goal),
+          ),
+        );
+        if (result != null && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Goal updated successfully')),
+          );
+        }
+        break;
+      case 'delete':
+        _showDeleteConfirmation();
+        break;
+    }
+  }
+
+  void _showDeleteConfirmation() {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Goal'),
+        content: const Text(
+          'Are you sure you want to delete this savings goal? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: _deleteGoal,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteGoal() async {
+    try {
+      await DatabaseService().deleteSavingsGoal(widget.goal.id);
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        Navigator.of(context).pop(); // Return to goals list
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Goal deleted successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.of(context).pop(); // Close dialog
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error deleting goal: $e')),
+        );
+      }
+    }
+  }
+
+  void _showAddContributionSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
+        ),
+        child: AddContributionSheet(
+          goal: widget.goal,
+          onContribute: _handleContribution,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _handleContribution(double amount, String? note) async {
+    try {
+      final contribution = ContributionModel(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        goalId: widget.goal.id,
+        amount: amount,
+        date: DateTime.now(),
+        note: note,
+      );
+
+      await DatabaseService().addContribution(widget.goal.id, contribution);
+      if (mounted) {
+        Navigator.pop(context); // Close sheet
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Contribution added successfully')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding contribution: $e')),
+        );
+      }
+    }
+  }
+
+  Widget _buildContributionsList() {
+    return StreamBuilder<List<ContributionModel>>(
+      stream: DatabaseService().getContributions(widget.goal.id),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final contributions = snapshot.data!;
+        if (contributions.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.savings_outlined,
+                  size: 48,
+                  color: Colors.grey[400],
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No contributions yet',
+                  style: TextStyle(
+                    color: Colors.grey[600],
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Start saving towards your goal',
+                  style: TextStyle(
+                    color: Colors.grey[500],
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return ListView.builder(
+          itemCount: contributions.length,
+          itemBuilder: (context, index) {
+            final contribution = contributions[index];
+            return ListTile(
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.savings,
+                  color: Theme.of(context).primaryColor,
+                ),
+              ),
+              title: Text(
+                currencyFormat.format(contribution.amount),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              subtitle: Text(
+                DateFormat('MMM d, y HH:mm').format(contribution.date),
+              ),
+              trailing: contribution.note != null
+                  ? IconButton(
+                      icon: const Icon(Icons.info_outline),
+                      onPressed: () => _showNoteDialog(contribution.note!),
+                    )
+                  : null,
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showNoteDialog(String note) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Contribution Note'),
+        content: Text(note),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 } 

@@ -238,73 +238,9 @@ class _CategoriesPageState extends State<CategoriesPage> {
           ],
         ),
       ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
-        ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const HomePage()),
-                    );
-                  },
-                ),
-                buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: true, // Categories page is selected
-                  onTap: () {}, // Already on categories page
-                ),
-                buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const TransactionsPage()),
-                    );
-                  },
-                ),
-                buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const AnalysisPage()),
-                    );
-                  },
-                ),
-                buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (context) => const ProfilePage()),
-                    );
-                  },
-                ),
-              ],
-            ),
-          ),
-        ),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: _selectedIndex,
+        onTap: _handleNavigation,
       ),
     );
   }
@@ -491,5 +427,36 @@ class _CategoriesPageState extends State<CategoriesPage> {
         );
       },
     );
+  }
+
+  void _handleNavigation(int index) {
+    if (index == 1) return; // Already on categories page
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalysisPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TransactionsPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+    }
   }
 } 

@@ -89,312 +89,260 @@ class _AnalysisPageState extends State<AnalysisPage> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          // Balance Section
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      currencyFormat.format(7783.00),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    Text(
-                      currencyFormat.format(1187.40),
-                      style: const TextStyle(
-                        color: Colors.blue,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                // Progress Bar
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
-                  child: LinearProgressIndicator(
-                    value: 0.3,
-                    backgroundColor: Colors.white.withOpacity(0.2),
-                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
-                    minHeight: 8,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      '30% of Your Expenses Looks Good',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                    Text(
-                      currencyFormat.format(20000.00),
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 20),
+      body: _buildBody(),
+      bottomNavigationBar: BottomNavBar(
+        currentIndex: 2, // Analysis is the third tab
+        onTap: _handleNavigation,
+      ),
+    );
+  }
 
-          // Main Content Area
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(20),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.vertical(
-                  top: Radius.circular(30),
+  Widget _buildBody() {
+    return Column(
+      children: [
+        // Balance Section
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    currencyFormat.format(7783.00),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  Text(
+                    currencyFormat.format(1187.40),
+                    style: const TextStyle(
+                      color: Colors.blue,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Progress Bar
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: LinearProgressIndicator(
+                  value: 0.3,
+                  backgroundColor: Colors.white.withOpacity(0.2),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+                  minHeight: 8,
                 ),
               ),
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Period Selection
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        children: _periods.map((period) {
-                          final isSelected = _selectedPeriod == period;
-                          return Padding(
-                            padding: EdgeInsets.only(
-                              right: period != _periods.last ? 10 : 0,
-                            ),
-                            child: _buildPeriodButton(period),
-                          );
-                        }).toList(),
-                      ),
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    '30% of Your Expenses Looks Good',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
                     ),
-                    const SizedBox(height: 20),
+                  ),
+                  Text(
+                    currencyFormat.format(20000.00),
+                    style: const TextStyle(
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 20),
 
-                    // Chart Section
-                    Container(
-                      padding: const EdgeInsets.all(15),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 10,
+        // Main Content Area
+        Expanded(
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(20),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(30),
+              ),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Period Selection
+                  SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: _periods.map((period) {
+                        final isSelected = _selectedPeriod == period;
+                        return Padding(
+                          padding: EdgeInsets.only(
+                            right: period != _periods.last ? 10 : 0,
                           ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              const Text(
-                                'Income & Expenses',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
+                          child: _buildPeriodButton(period),
+                        );
+                      }).toList(),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Chart Section
+                  Container(
+                    padding: const EdgeInsets.all(15),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 10,
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Income & Expenses',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
-                              Row(
-                                children: [
-                                  Container(
+                            ),
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color: Colors.blue.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(builder: (context) => const SearchPage()),
+                                      );
+                                    },
+                                    child: const Icon(
+                                      Icons.search,
+                                      color: Colors.blue,
+                                      size: 16,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                GestureDetector(
+                                  onTap: () async {
+                                    final DateTime now = DateTime.now();
+                                    final DateTime? picked = await showDatePicker(
+                                      context: context,
+                                      initialDate: now,
+                                      firstDate: DateTime(2020),
+                                      lastDate: DateTime(2025, 12, 31),
+                                      builder: (context, child) {
+                                        return Theme(
+                                          data: Theme.of(context).copyWith(
+                                            colorScheme: ColorScheme.light(
+                                              primary: AppColors.primary,
+                                              onPrimary: Colors.white,
+                                              surface: Colors.white,
+                                              onSurface: Colors.black,
+                                            ),
+                                          ),
+                                          child: child!,
+                                        );
+                                      },
+                                    );
+
+                                    if (picked != null) {
+                                      setState(() {
+                                        _selectedPeriod = 'Daily';
+                                      });
+                                    }
+                                  },
+                                  child: Container(
                                     padding: const EdgeInsets.all(4),
                                     decoration: BoxDecoration(
                                       color: Colors.blue.withOpacity(0.2),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
-                                    child: GestureDetector(
-                                      onTap: () {
-                                        Navigator.push(
-                                          context,
-                                          MaterialPageRoute(builder: (context) => const SearchPage()),
-                                        );
-                                      },
-                                      child: const Icon(
-                                        Icons.search,
-                                        color: Colors.blue,
-                                        size: 16,
-                                      ),
+                                    child: const Icon(
+                                      Icons.calendar_today,
+                                      color: Colors.blue,
+                                      size: 16,
                                     ),
                                   ),
-                                  const SizedBox(width: 8),
-                                  GestureDetector(
-                                    onTap: () async {
-                                      final DateTime now = DateTime.now();
-                                      final DateTime? picked = await showDatePicker(
-                                        context: context,
-                                        initialDate: now,
-                                        firstDate: DateTime(2020),
-                                        lastDate: DateTime(2025, 12, 31),
-                                        builder: (context, child) {
-                                          return Theme(
-                                            data: Theme.of(context).copyWith(
-                                              colorScheme: ColorScheme.light(
-                                                primary: AppColors.primary,
-                                                onPrimary: Colors.white,
-                                                surface: Colors.white,
-                                                onSurface: Colors.black,
-                                              ),
-                                            ),
-                                            child: child!,
-                                          );
-                                        },
-                                      );
-
-                                      if (picked != null) {
-                                        setState(() {
-                                          _selectedPeriod = 'Daily';
-                                        });
-                                      }
-                                    },
-                                    child: Container(
-                                      padding: const EdgeInsets.all(4),
-                                      decoration: BoxDecoration(
-                                        color: Colors.blue.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(4),
-                                      ),
-                                      child: const Icon(
-                                        Icons.calendar_today,
-                                        color: Colors.blue,
-                                        size: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 20),
-                          SizedBox(
-                            height: 200,
-                            child: BarChart(
-                              BarChartData(
-                                barTouchData: BarTouchData(enabled: false),
-                                titlesData: _titlesData,
-                                borderData: FlBorderData(show: false),
-                                gridData: FlGridData(show: false),
-                                barGroups: _barGroups,
-                              ),
+                                ),
+                              ],
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    // Summary Cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: 'Income',
-                            amount: 4120.00,
-                            isIncome: true,
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 15),
-                        Expanded(
-                          child: _buildSummaryCard(
-                            title: 'Expense',
-                            amount: 1187.40,
-                            isIncome: false,
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: 200,
+                          child: BarChart(
+                            BarChartData(
+                              barTouchData: BarTouchData(enabled: false),
+                              titlesData: _titlesData,
+                              borderData: FlBorderData(show: false),
+                              gridData: FlGridData(show: false),
+                              barGroups: _barGroups,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 15),
-                    const Text(
-                      'My Targets',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
+                  ),
+                  const SizedBox(height: 20),
+
+                  // Summary Cards
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildSummaryCard(
+                          title: 'Income',
+                          amount: 4120.00,
+                          isIncome: true,
+                        ),
                       ),
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: _buildSummaryCard(
+                          title: 'Expense',
+                          amount: 1187.40,
+                          isIncome: false,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+                  const Text(
+                    'My Targets',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 20),
+                ],
               ),
             ),
           ),
-        ],
-      ),
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.2),
-              spreadRadius: 1,
-              blurRadius: 10,
-              offset: const Offset(0, -3),
-            ),
-          ],
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 8.0),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const HomePage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const CategoriesPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const TransactionsPage()),
-                  ),
-                ),
-                buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: true,
-                  onTap: () {},
-                ),
-                buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => const ProfilePage()),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
 
@@ -480,5 +428,36 @@ class _AnalysisPageState extends State<AnalysisPage> {
         ],
       ),
     );
+  }
+
+  void _handleNavigation(int index) {
+    if (index == 2) return; // Already on analysis page
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const HomePage()),
+        );
+        break;
+      case 1:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const CategoriesPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const TransactionsPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const ProfilePage()),
+        );
+        break;
+    }
   }
 } 

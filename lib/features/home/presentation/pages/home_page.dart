@@ -109,6 +109,42 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget _buildNavItem(int index, IconData outlinedIcon, IconData filledIcon, String label) {
+    final bool isSelected = _currentIndex == index;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: InkWell(
+        onTap: () => _handleNavigation(index),
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFFFF0000).withOpacity(0.1) : null,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? filledIcon : outlinedIcon,
+                color: isSelected ? const Color(0xFFFF0000) : Colors.grey,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? const Color(0xFFFF0000) : Colors.grey,
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   SliverAppBar _buildAppBar() {
     return SliverAppBar(
       expandedHeight: 140.0,
@@ -117,35 +153,29 @@ class _HomePageState extends State<HomePage> {
       stretch: true,
       automaticallyImplyLeading: false,
       backgroundColor: AppColors.primary,
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [
-          StretchMode.zoomBackground,
-          StretchMode.blurBackground,
-        ],
-        titlePadding: EdgeInsets.only(
-          left: 16,
-          right: 16,
-          bottom: 16,
-          top: MediaQuery.of(context).padding.top + 16,
-        ),
-        title: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              physics: const NeverScrollableScrollPhysics(),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: constraints.maxHeight - MediaQuery.of(context).padding.top,
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+      flexibleSpace: LayoutBuilder(
+        builder: (context, constraints) {
+          final bool isCollapsed = constraints.maxHeight <= kToolbarHeight + 30;
+          return FlexibleSpaceBar(
+            titlePadding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              bottom: 16,
+              top: MediaQuery.of(context).padding.top + (isCollapsed ? 0 : 16),
+            ),
+            title: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              height: isCollapsed ? 20 : 80,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (!isCollapsed) ...[
                     Text(
                       'Welcome back,',
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                        fontWeight: FontWeight.normal,
+                        fontSize: 10,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -153,7 +183,7 @@ class _HomePageState extends State<HomePage> {
                       _user?.fullName?.split(' ')[0] ?? 'User',
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 24,
+                        fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -162,24 +192,32 @@ class _HomePageState extends State<HomePage> {
                       DateFormat('EEEE, d MMMM').format(DateTime.now()),
                       style: TextStyle(
                         color: Colors.white.withOpacity(0.9),
-                        fontSize: 12,
+                        fontSize: 10,
                       ),
                     ),
-                  ],
+                  ] else
+                    const Text(
+                      'MetroWealth',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            background: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.primary, Color(0xFFFF0000)],
                 ),
               ),
-            );
-          },
-        ),
-        background: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.primary, Color(0xFF8B0000)],
             ),
-          ),
-        ),
+          );
+        },
       ),
       actions: [
         IconButton(
@@ -256,16 +294,16 @@ class _HomePageState extends State<HomePage> {
     switch (index) {
       case 0: // Home
         break;
-      case 1: // Analysis
-        Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const AnalysisPage()),
-        );
-        break;
-      case 2: // Categories
+      case 1: // Categories (swapped)
         Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => const CategoriesPage()),
+        );
+        break;
+      case 2: // Analysis (swapped)
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AnalysisPage()),
         );
         break;
       case 3: // Transactions

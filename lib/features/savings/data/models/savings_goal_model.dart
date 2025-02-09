@@ -1,93 +1,43 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+enum SavingsGoalStatus {
+  active,
+  completed,
+  cancelled
+}
+
 class SavingsGoalModel {
   final String id;
   final String userId;
   final String title;
   final String name;
-  final String icon;
+  final String description;
   final double targetAmount;
   final double currentAmount;
   final double savedAmount;
   final DateTime targetDate;
-  final String? category;
-  final String? description;
-  final bool isCompleted;
-  final List<ContributionModel> contributions;
   final DateTime createdAt;
-  final DateTime? updatedAt;
+  final SavingsGoalStatus status;
+  final String icon;
+  final String? imageUrl;
 
   SavingsGoalModel({
     required this.id,
     required this.userId,
     required this.title,
-    String? name,
-    String? icon,
+    required this.name,
+    required this.description,
     required this.targetAmount,
     required this.currentAmount,
-    double? savedAmount,
-    DateTime? targetDate,
-    this.category,
-    this.description,
-    this.isCompleted = false,
-    this.contributions = const [],
-    DateTime? createdAt,
-    this.updatedAt,
-  })  : name = name ?? title,
-        icon = icon ?? 'savings',
-        savedAmount = savedAmount ?? currentAmount,
-        targetDate = targetDate ?? DateTime(2025, 12, 31),
-        createdAt = createdAt ?? DateTime.now();
+    required this.savedAmount,
+    required this.targetDate,
+    required this.createdAt,
+    required this.status,
+    required this.icon,
+    this.imageUrl,
+  });
 
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'userId': userId,
-      'title': title,
-      'name': name,
-      'icon': icon,
-      'targetAmount': targetAmount,
-      'currentAmount': currentAmount,
-      'savedAmount': savedAmount,
-      'targetDate': targetDate.toIso8601String(),
-      'category': category,
-      'description': description,
-      'isCompleted': isCompleted,
-      'contributions': contributions.map((c) => c.toMap()).toList(),
-      'createdAt': createdAt.toIso8601String(),
-      'updatedAt': updatedAt?.toIso8601String(),
-    };
-  }
-
-  factory SavingsGoalModel.fromMap(Map<String, dynamic> map) {
-    return SavingsGoalModel(
-      id: map['id'] ?? '',
-      userId: map['userId'] ?? '',
-      title: map['title'] ?? '',
-      name: map['name'] ?? '',
-      icon: map['icon'] ?? 'savings',
-      targetAmount: (map['targetAmount'] ?? 0.0).toDouble(),
-      currentAmount: (map['currentAmount'] ?? 0.0).toDouble(),
-      savedAmount: (map['savedAmount'] ?? 0.0).toDouble(),
-      targetDate: map['targetDate'] is Timestamp 
-          ? (map['targetDate'] as Timestamp).toDate()
-          : DateTime.parse(map['targetDate']),
-      category: map['category'],
-      description: map['description'],
-      isCompleted: map['isCompleted'] ?? false,
-      contributions: (map['contributions'] as List<dynamic>?)
-          ?.map((x) => ContributionModel.fromMap(x as Map<String, dynamic>))
-          .toList() ?? [],
-      createdAt: map['createdAt'] is Timestamp 
-          ? (map['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(map['createdAt']),
-      updatedAt: map['updatedAt'] != null 
-          ? map['updatedAt'] is Timestamp 
-              ? (map['updatedAt'] as Timestamp).toDate()
-              : DateTime.parse(map['updatedAt'])
-          : null,
-    );
-  }
+  double get progressPercentage => (currentAmount / targetAmount).clamp(0.0, 1.0);
 
   factory SavingsGoalModel.fromFirestore(DocumentSnapshot doc) {
     final data = doc.data() as Map<String, dynamic>;
@@ -96,65 +46,35 @@ class SavingsGoalModel {
       userId: data['userId'],
       title: data['title'],
       name: data['name'],
-      icon: data['icon'],
-      targetAmount: (data['targetAmount'] ?? 0.0).toDouble(),
-      currentAmount: (data['currentAmount'] ?? 0.0).toDouble(),
-      savedAmount: (data['savedAmount'] ?? 0.0).toDouble(),
-      targetDate: data['targetDate'] is Timestamp 
-          ? (data['targetDate'] as Timestamp).toDate()
-          : DateTime.parse(data['targetDate'].toString()),
-      category: data['category'],
       description: data['description'],
-      isCompleted: data['isCompleted'] ?? false,
-      contributions: (data['contributions'] as List<dynamic>?)
-          ?.map((x) => ContributionModel.fromMap(x as Map<String, dynamic>))
-          .toList() ?? [],
-      createdAt: data['createdAt'] is Timestamp 
-          ? (data['createdAt'] as Timestamp).toDate()
-          : DateTime.parse(data['createdAt'].toString()),
-      updatedAt: data['updatedAt'] != null 
-          ? data['updatedAt'] is Timestamp 
-              ? (data['updatedAt'] as Timestamp).toDate()
-              : DateTime.parse(data['updatedAt'].toString())
-          : null,
+      targetAmount: (data['targetAmount'] as num).toDouble(),
+      currentAmount: (data['currentAmount'] as num).toDouble(),
+      savedAmount: (data['savedAmount'] as num).toDouble(),
+      targetDate: (data['targetDate'] as Timestamp).toDate(),
+      createdAt: (data['createdAt'] as Timestamp).toDate(),
+      status: SavingsGoalStatus.values.firstWhere(
+        (e) => e.toString() == data['status'],
+        orElse: () => SavingsGoalStatus.active,
+      ),
+      icon: data['icon'],
+      imageUrl: data['imageUrl'],
     );
   }
-}
 
-class ContributionModel {
-  final String id;
-  final String goalId;
-  final double amount;
-  final DateTime date;
-  final String? note;
-
-  ContributionModel({
-    required this.id,
-    required this.goalId,
-    required this.amount,
-    required this.date,
-    this.note,
-  });
-
-  Map<String, dynamic> toMap() {
+  Map<String, dynamic> toFirestore() {
     return {
-      'id': id,
-      'goalId': goalId,
-      'amount': amount,
-      'date': date.toIso8601String(),
-      'note': note,
+      'userId': userId,
+      'title': title,
+      'name': name,
+      'description': description,
+      'targetAmount': targetAmount,
+      'currentAmount': currentAmount,
+      'savedAmount': savedAmount,
+      'targetDate': Timestamp.fromDate(targetDate),
+      'createdAt': Timestamp.fromDate(createdAt),
+      'status': status.toString(),
+      'icon': icon,
+      'imageUrl': imageUrl,
     };
-  }
-
-  factory ContributionModel.fromMap(Map<String, dynamic> map) {
-    return ContributionModel(
-      id: map['id'] ?? '',
-      goalId: map['goalId'] ?? '',
-      amount: (map['amount'] ?? 0.0).toDouble(),
-      date: map['date'] is Timestamp 
-          ? (map['date'] as Timestamp).toDate()
-          : DateTime.parse(map['date']),
-      note: map['note'],
-    );
   }
 } 

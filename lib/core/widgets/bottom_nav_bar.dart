@@ -6,10 +6,10 @@ class BottomNavBar extends StatelessWidget {
   final Function(int) onTap;
 
   const BottomNavBar({
-    Key? key,
+    super.key,
     required this.currentIndex,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,93 +25,88 @@ class BottomNavBar extends StatelessWidget {
         ],
       ),
       child: SafeArea(
-        child: BottomNavigationBar(
-          currentIndex: currentIndex,
-          onTap: onTap,
-          type: BottomNavigationBarType.fixed,
-          backgroundColor: Colors.white,
-          selectedItemColor: AppColors.primary,
-          unselectedItemColor: Colors.grey,
-          showUnselectedLabels: true,
-          items: const [
-            BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined),
-              activeIcon: Icon(Icons.home),
-              label: 'Home',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.analytics_outlined),
-              activeIcon: Icon(Icons.analytics),
-              label: 'Analysis',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.category_outlined),
-              activeIcon: Icon(Icons.category),
-              label: 'Categories',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.account_balance_wallet_outlined),
-              activeIcon: Icon(Icons.account_balance_wallet),
-              label: 'Transactions',
-            ),
-            BottomNavigationBarItem(
-              icon: Icon(Icons.person_outline),
-              activeIcon: Icon(Icons.person),
-              label: 'Profile',
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildNavItem(
+                icon: Icons.home_outlined,
+                activeIcon: Icons.home,
+                label: 'Home',
+                index: 0,
+              ),
+              _buildNavItem(
+                icon: Icons.category_outlined,
+                activeIcon: Icons.category,
+                label: 'Categories',
+                index: 1,
+              ),
+              _buildNavItem(
+                icon: Icons.analytics_outlined,
+                activeIcon: Icons.analytics,
+                label: 'Analysis',
+                index: 2,
+              ),
+              _buildNavItem(
+                icon: Icons.receipt_long_outlined,
+                activeIcon: Icons.receipt_long,
+                label: 'Transactions',
+                index: 3,
+              ),
+              _buildNavItem(
+                icon: Icons.person_outline,
+                activeIcon: Icons.person,
+                label: 'Profile',
+                index: 4,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
 
-Widget buildNavItem({
-  required IconData icon,
-  required bool isSelected,
-  required VoidCallback onTap,
-}) {
-  return Expanded(
-    child: GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? AppColors.primary : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: isSelected ? Colors.white : const Color(0xFF757575),
-              size: 24,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _getNavLabel(icon),
-              style: TextStyle(
+  Widget _buildNavItem({
+    required IconData icon,
+    required IconData activeIcon,
+    required String label,
+    required int index,
+  }) {
+    final bool isSelected = currentIndex == index;
+    return Expanded(
+      child: GestureDetector(
+        onTap: () => onTap(index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+          decoration: BoxDecoration(
+            color: isSelected ? AppColors.primary : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                isSelected ? activeIcon : icon,
                 color: isSelected ? Colors.white : const Color(0xFF757575),
-                fontSize: 10,
-                fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                size: 24,
               ),
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+              const SizedBox(height: 4),
+              Text(
+                label,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : const Color(0xFF757575),
+                  fontSize: 10,
+                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ),
         ),
       ),
-    ),
-  );
-}
-
-String _getNavLabel(IconData icon) {
-  if (icon == Icons.home_outlined) return 'Home';
-  if (icon == Icons.category_outlined) return 'Categories';
-  if (icon == Icons.receipt_long_outlined) return 'Transaction';
-  if (icon == Icons.analytics_outlined) return 'Analysis';
-  if (icon == Icons.person_outline) return 'Account';
-  return '';
+    );
+  }
 } 
