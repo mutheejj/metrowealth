@@ -1,0 +1,144 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidAmount(amount) {
+      return amount is number && amount >= 0;
+    }
+
+    function isValidDate(dateField) {
+      return dateField is timestamp || 
+             (dateField is string && dateField.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}'));
+    }
+
+    // User profiles
+    match /users/{userId} {
+      allow read: if isOwner(userId);
+      // Simplified create rule for initial signup
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == userId &&
+                   request.resource.data.keys().hasAll(['id', 'fullName', 'email', 'createdAt']);
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+      
+      // Subcollections
+      match /{collection=**}/{document} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // Transactions
+    match /transactions/{transactionId} {
+      allow read: if isAuthenticated() && 
+                 request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && 
+                          request.auth.uid == resource.data.userId;
+    }
+
+    // Bank accounts
+    match /bank_accounts/{accountId} {
+      allow read: if isAuthenticated() && 
+                 request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == request.resource.data.userId;
+      allow update, delete: if isAuthenticated() && 
+                          request.auth.uid == resource.data.userId;
+    }
+
+    // Loans
+    match /loans/{loanId} {
+      allow read: if isAuthenticated() && 
+                 request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && 
+                   request.auth.uid == resource.data.userId;
+    }
+
+    // Savings accounts
+    match /savings_accounts/{accountId} {
+      allow read: if isAuthenticated() && 
+                 request.auth.uid == resource.data.userId;
+      allow create: if isAuthenticated() && 
+                   request.auth.uid == request.resource.data.userId;
+      allow update: if isAuthenticated() && 
+                   request.auth.uid == resource.data.userId;
+    }
+
+    // Validation functions
+    function isValidUser() {
+      let data = request.resource.data;
+      return data.fullName is string && data.fullName.size() > 0 &&
+             data.email is string && data.email.matches('^[^@]+@[^@]+\\.[^@]+$') &&
+             (data.mobileNumber == null || 
+              (data.mobileNumber is string && data.mobileNumber.matches('^\\+?[0-9]{10,15}$'))) &&
+             (data.dateOfBirth == null || isValidDate(data.dateOfBirth)) &&
+             (data.photoUrl == null || data.photoUrl is string);
+    }
+
+    function isValidUserUpdate() {
+      let data = request.resource.data;
+      return (!('email' in data) || data.email == resource.data.email) && // Email can't be changed
+             (!('id' in data) || data.id == resource.data.id) && // ID can't be changed
+             isValidUser();
+    }
+
+    function isValidTransaction() {
+      let data = request.resource.data;
+      return data.amount is number && data.amount > 0 &&
+             data.userId is string &&
+             isValidDate(data.date) &&
+             data.type in ['expense', 'income'] &&
+             data.category is string &&
+             (data.description == null || data.description is string);
+    }
+
+    function isValidTransactionUpdate() {
+      let data = request.resource.data;
+      return data.userId == resource.data.userId && // Can't change owner
+             isValidTransaction();
+    }
+
+    function isValidCategory() {
+      let data = request.resource.data;
+      return data.name is string && data.name.size() > 0 &&
+             data.icon is string &&
+             (data.budget == null || isValidAmount(data.budget));
+    }
+
+    function isValidSavingsGoal() {
+      let data = request.resource.data;
+      return data.name is string && data.name.size() > 0 &&
+             isValidAmount(data.targetAmount) &&
+             isValidDate(data.startDate) &&
+             (data.maturityDate == null || isValidDate(data.maturityDate)) &&
+             isValidAmount(data.interestRate);
+    }
+
+    function isValidLoan() {
+      let data = request.resource.data;
+      return isValidAmount(data.amount) &&
+             isValidAmount(data.interestRate) &&
+             data.termMonths is number && data.termMonths > 0 &&
+             data.purpose is string && data.purpose.size() > 0;
+    }
+
+    function isValidBankAccount() {
+      let data = request.resource.data;
+      return data.bankName is string && data.bankName.size() > 0 &&
+             data.accountNumber is string && 
+             data.accountType is string &&
+             isValidAmount(data.balance);
+    }
+  }
+} 

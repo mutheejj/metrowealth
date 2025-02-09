@@ -5,6 +5,7 @@ import 'package:metrowealth/features/auth/presentation/pages/login_page.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
+import 'package:flutter/foundation.dart';
 
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
@@ -15,14 +16,14 @@ class SignupPage extends StatefulWidget {
 
 class _SignupPageState extends State<SignupPage> {
   final _formKey = GlobalKey<FormState>();
-  final _fullNameController = TextEditingController();
+  final _authRepository = AuthRepository();
+  bool _isLoading = false;
+  String? _errorMessage;
+
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _authRepository = AuthRepository();
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
-  bool _isLoading = false;
+  final _fullNameController = TextEditingController();
 
   @override
   void dispose() {
@@ -33,15 +34,34 @@ class _SignupPageState extends State<SignupPage> {
     super.dispose();
   }
 
-  Future<void> _handleSignUp() async {
-    if (_formKey.currentState!.validate()) {
-      setState(() => _isLoading = true);
-      try {
-        await _authRepository.signUp(
-          email: _emailController.text,
-          password: _passwordController.text,
-          fullName: _fullNameController.text,
+  Future<void> _handleSignup() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      debugPrint('Starting signup process...');
+      
+      await _authRepository.signUp(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+        fullName: _fullNameController.text.trim(),
+      );
+      
+      debugPrint('Signup successful');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Account created successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
+        
+        await Future.delayed(const Duration(seconds: 1));
         
         if (mounted) {
           Navigator.pushReplacement(
@@ -49,30 +69,44 @@ class _SignupPageState extends State<SignupPage> {
             MaterialPageRoute(builder: (context) => const HomePage()),
           );
         }
-      } catch (e) {
-        if (mounted) {
-          String errorMessage = 'An error occurred during sign up';
-          if (e.toString().contains('permission-denied')) {
-            errorMessage = 'Error creating profile. Please try again.';
-          } else if (e.toString().contains('email-already-in-use')) {
-            errorMessage = 'This email is already registered';
-          } else if (e.toString().contains('weak-password')) {
-            errorMessage = 'Password is too weak';
-          }
-          
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(errorMessage),
-              backgroundColor: Colors.red,
+      }
+    } catch (e) {
+      debugPrint('Signup error: $e');
+      setState(() {
+        _errorMessage = _getErrorMessage(e.toString());
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_errorMessage!),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+            action: SnackBarAction(
+              label: 'OK',
+              textColor: Colors.white,
+              onPressed: () {
+                ScaffoldMessenger.of(context).hideCurrentSnackBar();
+              },
             ),
-          );
-        }
-      } finally {
-        if (mounted) {
-          setState(() => _isLoading = false);
-        }
+          ),
+        );
       }
     }
+  }
+
+  String _getErrorMessage(String error) {
+    if (error.contains('email-already-in-use')) {
+      return 'This email is already registered. Please try signing in instead.';
+    } else if (error.contains('weak-password')) {
+      return 'Password is too weak. Please use at least 6 characters with a mix of letters and numbers.';
+    } else if (error.contains('invalid-email')) {
+      return 'Please enter a valid email address.';
+    } else if (error.contains('network-request-failed')) {
+      return 'Network error. Please check your internet connection.';
+    }
+    return 'Failed to create account. Please try again later.';
   }
 
   @override
@@ -151,7 +185,7 @@ class _SignupPageState extends State<SignupPage> {
                   label: 'Password',
                   hint: 'Create a password',
                   controller: _passwordController,
-                  obscureText: _obscurePassword,
+                  obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please enter a password';
@@ -161,24 +195,13 @@ class _SignupPageState extends State<SignupPage> {
                     }
                     return null;
                   },
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
-                  ),
                 ),
                 const SizedBox(height: 24),
                 CustomTextField(
                   label: 'Confirm Password',
                   hint: 'Confirm your password',
                   controller: _confirmPasswordController,
-                  obscureText: _obscureConfirmPassword,
+                  obscureText: true,
                   validator: (value) {
                     if (value == null || value.isEmpty) {
                       return 'Please confirm your password';
@@ -188,24 +211,38 @@ class _SignupPageState extends State<SignupPage> {
                     }
                     return null;
                   },
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_off
-                          : Icons.visibility,
-                      color: Colors.grey,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
-                  ),
                 ),
                 const SizedBox(height: 32),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 8.0),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.red),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              _errorMessage!,
+                              style: const TextStyle(
+                                color: Colors.red,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
                 CustomButton(
-                  text: 'Sign Up',
-                  onPressed: _handleSignUp,
+                  text: _isLoading ? 'Creating Account...' : 'Sign Up',
+                  onPressed: _isLoading ? null : _handleSignup,
                   isLoading: _isLoading,
                 ),
                 const SizedBox(height: 24),

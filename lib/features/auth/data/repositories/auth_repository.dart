@@ -18,73 +18,34 @@ class AuthRepository {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   // Sign Up
-  Future<UserCredential> signUp({
+  Future<void> signUp({
     required String email,
     required String password,
     required String fullName,
   }) async {
-    UserCredential? credential;
     try {
-      // Create auth user
-      credential = await _auth.createUserWithEmailAndPassword(
-        email: email.trim(),
+      // Create user account
+      final userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
         password: password,
       );
 
-      // Create user profile in Firestore
-      if (credential.user != null) {
-        try {
-          // Wait for authentication to be fully initialized
-          await Future.delayed(const Duration(seconds: 1));
-          
-          // Verify the user is still signed in
-          if (_auth.currentUser == null) {
-            throw 'Authentication failed';
-          }
-
-          final user = UserModel(
-            id: credential.user!.uid,
-            fullName: fullName.trim(),
-            email: email.trim(),
-            createdAt: DateTime.now(),
-          );
-          
-          await _db.createUserProfile(user);
-          return credential;
-        } catch (e) {
-          debugPrint('Error creating profile: $e');
-          // Clean up: delete auth user if profile creation fails
-          await credential.user?.delete();
-          throw 'Failed to create user profile. Please try again.';
-        }
-      } else {
+      if (userCredential.user == null) {
         throw 'Failed to create account';
       }
-    } on FirebaseAuthException catch (e) {
-      // Clean up if needed
-      if (credential?.user != null) {
-        await credential!.user!.delete();
-      }
-      
-      debugPrint('Firebase Auth Error: ${e.code} - ${e.message}');
-      switch (e.code) {
-        case 'weak-password':
-          throw 'Password should be at least 6 characters';
-        case 'email-already-in-use':
-          throw 'This email is already registered';
-        case 'invalid-email':
-          throw 'Please enter a valid email address';
-        default:
-          throw e.message ?? 'An error occurred during sign up';
-      }
+
+      // Create user profile
+      final user = UserModel(
+        id: userCredential.user!.uid,
+        fullName: fullName,
+        email: email,
+        createdAt: DateTime.now(),
+      );
+
+      await _db.createUserProfile(user);
     } catch (e) {
-      // Clean up if needed
-      if (credential?.user != null) {
-        await credential!.user!.delete();
-      }
-      
-      debugPrint('Signup error: $e');
-      throw 'Failed to create account. Please try again.';
+      debugPrint('Error in signUp: $e');
+      rethrow; // Rethrow to handle in UI
     }
   }
 

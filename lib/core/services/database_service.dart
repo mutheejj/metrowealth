@@ -3,13 +3,109 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import 'package:metrowealth/features/banking/data/models/bank_account_model.dart';
+import 'package:metrowealth/features/loans/data/models/loan_model.dart';
+import 'package:metrowealth/features/savings/data/models/savings_account_model.dart';
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance;
+
+  String? get currentUserId => _auth.currentUser?.uid;
+
+  // Create default categories for new users
+  Future<void> _createDefaultCategories(String userId) async {
+    try {
+      final batch = _db.batch();
+      final categoriesRef = _db.collection('users').doc(userId).collection('categories');
+
+      final defaultCategories = [
+        {'name': 'Food & Dining', 'icon': 'restaurant', 'budget': 0.0},
+        {'name': 'Transportation', 'icon': 'directions_car', 'budget': 0.0},
+        {'name': 'Shopping', 'icon': 'shopping_bag', 'budget': 0.0},
+        {'name': 'Bills & Utilities', 'icon': 'receipt', 'budget': 0.0},
+        {'name': 'Entertainment', 'icon': 'movie', 'budget': 0.0},
+        {'name': 'Healthcare', 'icon': 'medical_services', 'budget': 0.0},
+        {'name': 'Education', 'icon': 'school', 'budget': 0.0},
+        {'name': 'Savings', 'icon': 'savings', 'budget': 0.0},
+      ];
+
+      for (var category in defaultCategories) {
+        final docRef = categoriesRef.doc();
+        batch.set(docRef, {
+          ...category,
+          'id': docRef.id,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+
+      await batch.commit();
+    } catch (e) {
+      debugPrint('Error creating default categories: $e');
+      rethrow;
+    }
+  }
+
+  // Create user profile with initial setup
+  Future<void> createUserProfile(UserModel user) async {
+    try {
+      debugPrint('Starting user profile creation for ID: ${user.id}');
+      
+      // Create main user document first
+      await _db.collection('users').doc(user.id).set({
+        'id': user.id,
+        'fullName': user.fullName,
+        'email': user.email,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('Basic user profile created successfully');
+
+      // Now update with additional data
+      await _db.collection('users').doc(user.id).update({
+        'mobileNumber': user.mobileNumber,
+        'dateOfBirth': user.dateOfBirth?.toIso8601String(),
+        'photoUrl': user.photoUrl,
+        'address': user.address,
+        'totalBalance': 0.0,
+        'savingsBalance': 0.0,
+        'loanBalance': 0.0,
+        'linkedBankAccounts': [],
+        'settings': {
+          'currency': 'KES',
+          'theme': 'light',
+          'notifications': {
+            'transactions': true,
+            'budgetAlerts': true,
+            'goals': true,
+          },
+        },
+        'statistics': {
+          'totalIncome': 0.0,
+          'totalExpenses': 0.0,
+          'monthlyBudget': 0.0,
+          'savingsGoal': 0.0,
+        },
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+
+      debugPrint('User profile updated with additional data');
+      
+      // Create default categories
+      await _createDefaultCategories(user.id);
+      debugPrint('Default categories created');
+      
+    } catch (e) {
+      debugPrint('Error creating user profile: $e');
+      rethrow;
+    }
+  }
 
   // Users Collection
-  Future<void> createUserProfile(UserModel user) async {
+  Future<void> createUserProfileOld(UserModel user) async {
     try {
       // Wait for authentication to be ready and retry a few times if needed
       int retries = 5; // Increased retries
@@ -71,78 +167,6 @@ class DatabaseService {
       rethrow;
     }
   }
-
-  Future<void> _createDefaultCategories(String userId) async {
-    try {
-      final categoriesRef = _db
-          .collection('users')
-          .doc(userId)
-          .collection('categories');
-
-      // Create categories in a batch
-      final batch = _db.batch();
-      
-      for (var category in _defaultCategories) {
-        final docRef = categoriesRef.doc();
-        batch.set(docRef, {
-          ...category,
-          'id': docRef.id,
-          'createdAt': FieldValue.serverTimestamp(),
-        });
-      }
-
-      await batch.commit();
-    } catch (e) {
-      debugPrint('Error creating categories: $e');
-      rethrow;
-    }
-  }
-
-  // Default categories list
-  static const _defaultCategories = [
-    {
-      'name': 'Food & Dining',
-      'type': 'expense',
-      'icon': 'restaurant',
-      'budget': 0.0,
-      'color': '#FF6B6B',
-    },
-    {
-      'name': 'Transportation',
-      'type': 'expense',
-      'icon': 'directions_car',
-      'budget': 0.0,
-      'color': '#4ECDC4',
-    },
-    {
-      'name': 'Shopping',
-      'type': 'expense',
-      'icon': 'shopping_bag',
-      'budget': 0.0,
-      'color': '#45B7D1',
-    },
-    {
-      'name': 'Bills & Utilities',
-      'type': 'expense',
-      'icon': 'receipt',
-      'budget': 0.0,
-      'color': '#96CEB4',
-    },
-    {
-      'name': 'Salary',
-      'type': 'income',
-      'icon': 'work',
-      'budget': 0.0,
-      'color': '#4CAF50',
-    },
-    {
-      'name': 'Business',
-      'type': 'income',
-      'icon': 'business',
-      'budget': 0.0,
-      'color': '#2196F3',
-    },
-  ];
 
   // Add a transaction with category
   Future<void> addTransaction(TransactionModel transaction) async {
@@ -257,9 +281,6 @@ class DatabaseService {
     }
   }
 
-  // Get current user ID
-  String? get currentUserId => _auth.currentUser?.uid;
-
   // Get user transactions by date range
   Stream<List<TransactionModel>> getTransactionsByDateRange(
     String userId,
@@ -330,5 +351,160 @@ class DatabaseService {
       debugPrint('Error deleting user data: $e');
       rethrow;
     }
+  }
+
+  // Profile Photo Upload
+  Future<String> uploadProfilePhoto(String userId, File photo) async {
+    try {
+      // Create a reference to the photo location
+      final ref = _storage.ref().child('profile_photos/$userId.jpg');
+      
+      // Upload the file with metadata
+      final metadata = SettableMetadata(
+        contentType: 'image/jpeg',
+        customMetadata: {'userId': userId},
+      );
+      
+      // Start upload
+      final uploadTask = ref.putFile(photo, metadata);
+      
+      // Monitor upload progress if needed
+      uploadTask.snapshotEvents.listen((TaskSnapshot snapshot) {
+        final progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        debugPrint('Upload progress: ${(progress * 100).toStringAsFixed(2)}%');
+      });
+
+      // Wait for upload to complete
+      await uploadTask;
+      
+      // Get download URL
+      final downloadUrl = await ref.getDownloadURL();
+      
+      // Update user profile with photo URL
+      await _db.collection('users').doc(userId).update({
+        'photoUrl': downloadUrl,
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+      
+      return downloadUrl;
+    } catch (e) {
+      debugPrint('Error uploading profile photo: $e');
+      rethrow;
+    }
+  }
+
+  // Bank Account Methods
+  Future<void> linkBankAccount(BankAccountModel account) async {
+    try {
+      await _db.collection('bank_accounts').doc(account.id).set(account.toMap());
+      
+      // Update user's linked accounts
+      await _db.collection('users').doc(account.userId).update({
+        'linkedBankAccounts': FieldValue.arrayUnion([account.id])
+      });
+    } catch (e) {
+      debugPrint('Error linking bank account: $e');
+      rethrow;
+    }
+  }
+
+  // Loan Methods
+  Future<void> applyForLoan(LoanModel loan) async {
+    try {
+      await _db.collection('loans').doc(loan.id).set(loan.toMap());
+    } catch (e) {
+      debugPrint('Error applying for loan: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateLoanStatus(String loanId, LoanStatus status) async {
+    try {
+      await _db.collection('loans').doc(loanId).update({
+        'status': status.toString(),
+        'lastUpdated': DateTime.now().toIso8601String(),
+      });
+    } catch (e) {
+      debugPrint('Error updating loan status: $e');
+      rethrow;
+    }
+  }
+
+  // Savings Methods
+  Future<void> createSavingsAccount(SavingsAccountModel account) async {
+    try {
+      await _db.collection('savings_accounts').doc(account.id).set(account.toMap());
+    } catch (e) {
+      debugPrint('Error creating savings account: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updateSavingsBalance(
+    String accountId, 
+    double amount, 
+    bool isDeposit
+  ) async {
+    try {
+      final account = await _db.collection('savings_accounts').doc(accountId).get();
+      
+      if (!account.exists) throw 'Savings account not found';
+      
+      double currentBalance = account.data()?['balance'] ?? 0.0;
+      double newBalance = isDeposit 
+          ? currentBalance + amount 
+          : currentBalance - amount;
+
+      if (!isDeposit && newBalance < 0) {
+        throw 'Insufficient funds';
+      }
+
+      await _db.collection('savings_accounts').doc(accountId).update({
+        'balance': newBalance,
+        'transactionHistory': FieldValue.arrayUnion([
+          {
+            'amount': amount,
+            'type': isDeposit ? 'deposit' : 'withdrawal',
+            'timestamp': DateTime.now().toIso8601String(),
+          }
+        ])
+      });
+
+      // Update user's total balance
+      await _db.collection('users').doc(account.data()?['userId']).update({
+        'savingsBalance': FieldValue.increment(isDeposit ? amount : -amount),
+      });
+    } catch (e) {
+      debugPrint('Error updating savings balance: $e');
+      rethrow;
+    }
+  }
+
+  // Transaction Methods with Categories
+  Future<void> createTransaction(TransactionModel transaction) async {
+    try {
+      await _db.collection('transactions').doc(transaction.id).set(transaction.toMap());
+
+      // Update relevant balances
+      final userRef = _db.collection('users').doc(transaction.userId);
+      
+      if (transaction.type == TransactionType.expense) {
+        await userRef.update({
+          'totalBalance': FieldValue.increment(-transaction.amount)
+        });
+      } else {
+        await userRef.update({
+          'totalBalance': FieldValue.increment(transaction.amount)
+        });
+      }
+    } catch (e) {
+      debugPrint('Error creating transaction: $e');
+      rethrow;
+    }
+  }
+
+  // Get user stream
+  Stream<DocumentSnapshot> getUserStream(String userId) {
+    return _db.collection('users').doc(userId).snapshots();
   }
 } 
