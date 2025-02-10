@@ -78,73 +78,115 @@ class _HomePageState extends State<HomePage> {
                   backgroundColor: AppColors.primary,
                   elevation: 0,
                   pinned: true,
+                  expandedHeight: 120,
                   automaticallyImplyLeading: false,
-                  title: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Welcome back, ${_user?.fullName?.split(' ')[0] ?? 'User'}',
+                  flexibleSpace: FlexibleSpaceBar(
+                    background: Container(
+                      color: AppColors.primary,
+                      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          RichText(
+                            text: TextSpan(
                               style: const TextStyle(
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                fontSize: 24,
                               ),
+                              children: [
+                                const TextSpan(
+                                  text: 'Welcome back, ',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: _user?.fullName ?? 'User',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                const TextSpan(text: ' 👋'),
+                              ],
                             ),
-                            Text(
-                              DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.9),
-                                fontSize: 12,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today_outlined,
+                                color: Colors.white70,
+                                size: 16,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                DateFormat('EEEE, d MMMM').format(DateTime.now()),
+                                style: TextStyle(
+                                  color: Colors.white.withOpacity(0.9),
+                                  fontSize: 14,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  actions: [
+                    Container(
+                      margin: const EdgeInsets.only(right: 8),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: Stack(
+                          children: [
+                            const Icon(Icons.notifications_outlined, color: Colors.white),
+                            Positioned(
+                              right: 0,
+                              top: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                decoration: const BoxDecoration(
+                                  color: Colors.red,
+                                  shape: BoxShape.circle,
+                                ),
+                                constraints: const BoxConstraints(
+                                  minWidth: 14,
+                                  minHeight: 14,
+                                ),
+                                child: const Text(
+                                  '2',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 8,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    IconButton(
-                      icon: Stack(
-                        children: [
-                          const Icon(Icons.notifications_outlined, color: Colors.white),
-                          Positioned(
-                            right: 0,
-                            top: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              decoration: const BoxDecoration(
-                                color: Colors.red,
-                                shape: BoxShape.circle,
-                              ),
-                              constraints: const BoxConstraints(
-                                minWidth: 14,
-                                minHeight: 14,
-                              ),
-                              child: const Text(
-                                '2',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 8,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationPage()),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationPage()),
+                        ),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ProfilePage()),
+                    Container(
+                      margin: const EdgeInsets.only(right: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: IconButton(
+                        icon: const Icon(Icons.account_circle_outlined, color: Colors.white),
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ProfilePage()),
+                        ),
                       ),
                     ),
                   ],
@@ -177,44 +219,8 @@ class _HomePageState extends State<HomePage> {
             ),
           ),
       bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
+        currentIndex: 0,
         onTap: _handleNavigation,
-      ),
-    );
-  }
-
-  Widget _buildNavItem(int index, IconData outlinedIcon, IconData filledIcon, String label) {
-    final bool isSelected = _currentIndex == index;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
-      child: InkWell(
-        onTap: () => _handleNavigation(index),
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFF0000).withOpacity(0.1) : null,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                isSelected ? filledIcon : outlinedIcon,
-                color: isSelected ? const Color(0xFFFF0000) : Colors.grey,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                label,
-                style: TextStyle(
-                  color: isSelected ? const Color(0xFFFF0000) : Colors.grey,
-                  fontSize: 12,
-                  fontWeight: isSelected ? FontWeight.w500 : FontWeight.normal,
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }
@@ -244,238 +250,34 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _handleNavigation(int index) {
-    setState(() => _currentIndex = index);
+    if (index == 0) return; // Already on home page
+    
     switch (index) {
-      case 0: // Home
-        break;
-      case 1: // Categories (swapped)
-        Navigator.push(
+      case 1:
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const CategoriesPage()),
         );
         break;
-      case 2: // Analysis (swapped)
-        Navigator.push(
+      case 2:
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const AnalysisPage()),
         );
         break;
-      case 3: // Transactions
-        Navigator.push(
+      case 3:
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const TransactionsPage()),
         );
         break;
-      case 4: // Profile
-        Navigator.push(
+      case 4:
+        Navigator.pushReplacement(
           context,
           MaterialPageRoute(builder: (_) => const ProfilePage()),
         );
         break;
     }
-  }
-
-  Widget _buildHomeContent() {
-    return SafeArea(
-      child: StreamBuilder<DocumentSnapshot>(
-        stream: _db.getUserStream(_db.currentUserId!),
-        builder: (context, userSnapshot) {
-          if (userSnapshot.hasError) {
-            return const Center(child: Text('Something went wrong'));
-          }
-
-          if (!userSnapshot.hasData) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          final userData = userSnapshot.data!.data() as Map<String, dynamic>;
-          final user = UserModel.fromFirestore(userSnapshot.data!);
-
-          return RefreshIndicator(
-            onRefresh: () async {
-              setState(() {});
-            },
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderGradient(user),
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _buildBalanceCards(user),
-                        const SizedBox(height: 24),
-                        _buildQuickActions(),
-                        const SizedBox(height: 24),
-                        _buildExpenseChart(),
-                        const SizedBox(height: 24),
-                        _buildRecentTransactions(),
-                        const SizedBox(height: 24),
-                        _buildUpcomingBills(),
-                        const SizedBox(height: 24),
-                        _buildSavingsGoalsProgress(user),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildHeaderGradient(UserModel user) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.primary,
-            AppColors.primary.withOpacity(0.8),
-          ],
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Hi, ${user.fullName?.split(' ')[0] ?? 'User'} 👋',
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      DateFormat('EEEE, d MMMM').format(DateTime.now()),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.white.withOpacity(0.2),
-                backgroundImage: user.photoUrl != null 
-                    ? NetworkImage(user.photoUrl!) 
-                    : null,
-                child: user.photoUrl == null
-                    ? Text(
-                        user.fullName?[0].toUpperCase() ?? 'U',
-                        style: const TextStyle(fontSize: 24),
-                      )
-                    : null,
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Card(
-            elevation: 8,
-            shadowColor: Colors.black26,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Total Balance',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _currencyFormat.format(user.totalBalance),
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _buildBalanceIndicator(
-                        'Income',
-                        user.statistics?['totalIncome']?.toDouble() ?? 0.0,
-                        Icons.arrow_upward,
-                        Colors.green,
-                      ),
-                      _buildBalanceIndicator(
-                        'Expenses',
-                        user.statistics?['totalExpenses']?.toDouble() ?? 0.0,
-                        Icons.arrow_downward,
-                        Colors.red,
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBalanceIndicator(
-    String label,
-    double amount,
-    IconData icon,
-    Color color,
-  ) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-          ),
-          child: Icon(icon, color: color, size: 16),
-        ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                color: Colors.grey[600],
-                fontSize: 12,
-              ),
-            ),
-            Text(
-              _currencyFormat.format(amount),
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
   }
 
   Widget _buildExpenseChart() {

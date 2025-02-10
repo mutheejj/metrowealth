@@ -21,6 +21,12 @@ class _HomeContainerState extends State<HomeContainer> {
     const ProfilePage(),
   ];
 
+  void _onTabTapped(int index) {
+    if (_currentIndex != index) {
+      setState(() => _currentIndex = index);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -43,11 +49,7 @@ class _HomeContainerState extends State<HomeContainer> {
           ),
           child: BottomNavBar(
             currentIndex: _currentIndex,
-            onTap: (index) {
-              setState(() {
-                _currentIndex = index;
-              });
-            },
+            onTap: _onTabTapped,
           ),
         ),
       ),

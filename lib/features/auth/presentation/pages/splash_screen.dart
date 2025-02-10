@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/auth/presentation/pages/onboarding_screen.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_container.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -13,17 +15,25 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToNext();
+    _checkAuthAndNavigate();
   }
 
-  void _navigateToNext() {
-    Future.delayed(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (context) => const OnboardingScreen(),
-        ),
-      );
-    });
+  Future<void> _checkAuthAndNavigate() async {
+    await Future.delayed(const Duration(seconds: 3));
+    
+    if (!mounted) return;
+
+    final auth = FirebaseAuth.instance;
+    
+    // Sign out any existing session
+    await auth.signOut();
+
+    // Always navigate to onboarding
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (context) => const OnboardingScreen(),
+      ),
+    );
   }
 
   @override
