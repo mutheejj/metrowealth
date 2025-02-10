@@ -1,462 +1,381 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
-import 'package:metrowealth/features/navigation/presentation/pages/main_navigation.dart';
-import 'package:intl/intl.dart';
-import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
-import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
-import 'package:metrowealth/features/categories/presentation/widgets/add_category_dialog.dart';
-import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
-import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
-import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
-import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
+import 'package:metrowealth/features/categories/presentation/widgets/category_card.dart';
+import 'package:metrowealth/features/categories/presentation/widgets/add_category_sheet.dart';
 import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
+import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
 
 class CategoriesPage extends StatefulWidget {
-  const CategoriesPage({Key? key}) : super(key: key);
+  const CategoriesPage({super.key});
 
   @override
   State<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> {
-  final currencyFormat = NumberFormat.currency(symbol: '\$');
-  final List<CategoryModel> _categories = [
-    CategoryModel(
-      id: '1',
-      name: 'Food',
-      icon: 'food',
-      budget: 20000.0,
-      spent: 7783.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '2',
-      name: 'Transport',
-      icon: 'transport',
-      budget: 10000.0,
-      spent: 5123.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '3',
-      name: 'Medicine',
-      icon: 'medicine',
-      budget: 5000.0,
-      spent: 2500.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '4',
-      name: 'Groceries',
-      icon: 'groceries',
-      budget: 15000.0,
-      spent: 8900.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '5',
-      name: 'Rent',
-      icon: 'rent',
-      budget: 50000.0,
-      spent: 50000.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '6',
-      name: 'Gifts',
-      icon: 'gifts',
-      budget: 5000.0,
-      spent: 2100.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '7',
-      name: 'Savings',
-      icon: 'savings',
-      budget: 30000.0,
-      spent: 30000.0,
-      expenses: [],
-    ),
-    CategoryModel(
-      id: '8',
-      name: 'Entertainment',
-      icon: 'entertainment',
-      budget: 8000.0,
-      spent: 4500.0,
-      expenses: [],
-    ),
-  ];
+class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProviderStateMixin {
+  TabController? _tabController;
+  late CategoryRepository _categoryRepository;
+  CategoryType _selectedType = CategoryType.expense;
+  double _totalBudget = 0;
+  double _totalSpent = 0;
+  int _currentIndex = 1; // Set to 1 for Categories tab
 
-  int _selectedIndex = 1; // Set to 1 for categories tab
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: CategoryType.values.length, vsync: this);
+    _categoryRepository = CategoryRepository(FirebaseAuth.instance.currentUser!.uid);
+    
+    _tabController?.addListener(() {
+      if (_tabController?.indexIsChanging ?? false) {
+        setState(() {
+          _selectedType = CategoryType.values[_tabController?.index ?? 0];
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController?.dispose();
+    super.dispose();
+  }
+
+  void _calculateTotals(List<CategoryModel> categories) {
+    _totalBudget = categories.fold(0, (sum, cat) => sum + cat.budget);
+    _totalSpent = categories.fold(0, (sum, cat) => sum + cat.spent);
+  }
+
+  void _onNavItemTapped(int index) {
+    if (index == _currentIndex) return;
+    
+    switch (index) {
+      case 0:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const HomePage()),
+        );
+        break;
+      case 2:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const TransactionsPage()),
+        );
+        break;
+      case 3:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const AnalysisPage()),
+        );
+        break;
+      case 4:
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const ProfilePage()),
+        );
+        break;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final totalSpent = _categories.fold(0.0, (sum, cat) => sum + cat.spent);
-    final totalBudget = _categories.fold(0.0, (sum, cat) => sum + cat.budget);
-    final progress = totalSpent / totalBudget;
-
+    if (_tabController == null) return const SizedBox();
+    
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        automaticallyImplyLeading: false,
-        title: const Text(
-          'Categories',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-          textAlign: TextAlign.center,
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-            onPressed: () {}, // TODO: Handle notifications
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           children: [
-            // Total Balance and Expenses
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20.0),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Total Balance',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            currencyFormat.format(totalSpent),
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const Text(
-                            'Total Expense',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 14,
-                            ),
-                          ),
-                          Text(
-                            '-${currencyFormat.format(totalBudget - totalSpent)}',
-                            style: const TextStyle(
-                              color: Colors.blue,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  // Progress bar
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
-                    child: LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: Colors.white24,
-                      valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
-                      minHeight: 8,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        '${(progress * 100).toInt()}% Of Your Expenses',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(totalBudget),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            const SizedBox(height: 20),
-            
-            // Categories Grid
+            _buildHeader(),
             Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(20),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.vertical(
-                    top: Radius.circular(30),
-                  ),
-                ),
-                child: GridView.builder(
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 3,
-                    childAspectRatio: 1.0,
-                    crossAxisSpacing: 15,
-                    mainAxisSpacing: 15,
-                  ),
-                  itemCount: _categories.length + 1, // +1 for "More" button
-                  itemBuilder: (context, index) {
-                    if (index == _categories.length) {
-                      return _buildMoreCard();
-                    }
-                    return _buildCategoryCard(_categories[index]);
-                  },
-                ),
+              child: StreamBuilder<List<CategoryModel>>(
+                stream: _categoryRepository.getCategoriesByType(_selectedType),
+                builder: (context, snapshot) {
+                  if (snapshot.hasError) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                          const SizedBox(height: 16),
+                          Text(
+                            'Error: ${snapshot.error}',
+                            style: TextStyle(color: AppColors.error),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  if (!snapshot.hasData) {
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      ),
+                    );
+                  }
+
+                  final categories = snapshot.data!;
+                  _calculateTotals(categories);
+                  
+                  if (categories.isEmpty) {
+                    return _buildEmptyState();
+                  }
+
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: categories.length,
+                    itemBuilder: (context, index) {
+                      final category = categories[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: CategoryCard(
+                          category: category,
+                          onEdit: () => _editCategory(category),
+                          onDelete: () => _deleteCategory(category),
+                        ),
+                      );
+                    },
+                  );
+                },
               ),
             ),
           ],
         ),
       ),
       bottomNavigationBar: BottomNavBar(
-        currentIndex: _selectedIndex,
-        onTap: _handleNavigation,
+        currentIndex: _currentIndex,
+        onTap: _onNavItemTapped,
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddCategorySheet,
+        backgroundColor: AppColors.primary,
+        child: const Icon(Icons.add),
       ),
     );
   }
 
-  Widget _buildCategoryCard(CategoryModel category) {
-    return InkWell(
-      onTap: () => _onCategoryTap(category),
-      onLongPress: () => _showDeleteCategoryDialog(category),
-      child: Container(
-        decoration: BoxDecoration(
-          color: category.name == 'Food' 
-              ? AppColors.primary 
-              : Colors.blue[100],
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              _getIconData(category.icon),
-              size: 32,
-              color: category.name == 'Food' 
-                  ? Colors.white 
-                  : Colors.blue[900],
+  Widget _buildHeader() {
+    return Container(
+      color: AppColors.primary,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Categories',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    _buildSummaryCard(
+                      'Total Budget',
+                      _totalBudget,
+                      Icons.account_balance_wallet,
+                      Colors.blue,
+                    ),
+                    _buildSummaryCard(
+                      'Total Spent',
+                      _totalSpent,
+                      Icons.shopping_cart,
+                      _totalSpent > _totalBudget ? AppColors.error : AppColors.success,
+                    ),
+                  ],
+                ),
+              ],
             ),
-            const SizedBox(height: 8),
-            Text(
-              category.name,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: category.name == 'Food' 
-                    ? Colors.white 
-                    : Colors.blue[900],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildMoreCard() {
-    return InkWell(
-      onTap: _onAddCategory,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.blue[100],
-          borderRadius: BorderRadius.circular(15),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.add,
-              size: 32,
-              color: Colors.blue[900],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'More',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-                color: Colors.blue[900],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  IconData _getIconData(String icon) {
-    switch (icon) {
-      case 'food':
-        return Icons.restaurant_outlined;
-      case 'transport':
-        return Icons.directions_bus_outlined;
-      case 'medicine':
-        return Icons.medical_services_outlined;
-      case 'groceries':
-        return Icons.shopping_basket_outlined;
-      case 'rent':
-        return Icons.home_outlined;
-      case 'gifts':
-        return Icons.card_giftcard_outlined;
-      case 'savings':
-        return Icons.savings_outlined;
-      case 'entertainment':
-        return Icons.movie_outlined;
-      default:
-        return Icons.category_outlined;
-    }
-  }
-
-  void _onCategoryTap(CategoryModel category) {
-    if (category.name == 'Savings') {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const SavingsPage(),
-        ),
-      );
-    } else {
-      Navigator.push<CategoryModel>(
-        context,
-        MaterialPageRoute(
-          builder: (context) => CategoryDetailPage(category: category),
-        ),
-      ).then((updatedCategory) {
-        if (updatedCategory != null) {
-          setState(() {
-            final index = _categories.indexWhere((c) => c.id == updatedCategory.id);
-            if (index != -1) {
-              _categories[index] = updatedCategory;
-            }
-          });
-        }
-      });
-    }
-  }
-
-  void _onAddCategory() {
-    showDialog<CategoryModel>(
-      context: context,
-      builder: (BuildContext context) => const AddCategoryDialog(),
-    ).then((CategoryModel? newCategory) {
-      if (newCategory != null) {
-        setState(() {
-          _categories.add(newCategory);
-        });
-      }
-    });
-  }
-
-  void _showDeleteCategoryDialog(CategoryModel category) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
           ),
-          title: const Text(
-            'Delete Category',
-            style: TextStyle(
+          TabBar(
+            controller: _tabController!,
+            isScrollable: true,
+            indicatorColor: AppColors.white,
+            tabs: CategoryType.values.map((type) {
+              return Tab(
+                text: type.toString().split('.').last.toUpperCase(),
+              );
+            }).toList(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard(String title, double amount, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(height: 8),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 12,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '\$${amount.toStringAsFixed(2)}',
+            style: const TextStyle(
+              color: Colors.white,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
           ),
-          content: Text(
-            'Are you sure you want to delete ${category.name}?',
-            style: const TextStyle(fontSize: 16),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: Colors.grey[600],
-                  fontSize: 16,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _categories.removeWhere((c) => c.id == category.id);
-                });
-                Navigator.pop(context);
-              },
-              child: const Text(
-                'Delete',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
-  void _handleNavigation(int index) {
-    if (index == 1) return; // Already on categories page
-    
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const HomePage()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AnalysisPage()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const TransactionsPage()),
-        );
-        break;
-      case 4:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const ProfilePage()),
-        );
-        break;
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.category_outlined,
+            size: 64,
+            color: Colors.grey[400],
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No ${_selectedType.toString().split('.').last.toLowerCase()} categories',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w500,
+              color: Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add a category to start tracking your expenses',
+            style: TextStyle(
+              color: Colors.grey[500],
+            ),
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: _showAddCategorySheet,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            ),
+            icon: const Icon(Icons.add),
+            label: const Text('Add Category'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddCategorySheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: AddCategorySheet(
+          type: _selectedType,
+          onAdd: (category) async {
+            try {
+              await _categoryRepository.addCategory(category);
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Category added successfully'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error adding category: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
+            }
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _editCategory(CategoryModel category) async {
+    // Show edit category dialog/sheet
+  }
+
+  Future<void> _deleteCategory(CategoryModel category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text('Are you sure you want to delete ${category.name}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.red,
+            ),
+            child: const Text('DELETE'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed ?? false) {
+      try {
+        await _categoryRepository.deleteCategory(category.id);
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Category deleted successfully'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting category: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
     }
   }
 } 

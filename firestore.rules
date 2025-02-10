@@ -118,6 +118,42 @@ service cloud.firestore {
                    request.auth.uid == resource.data.userId;
     }
 
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read: if isSignedIn();
+      allow write: if isSignedIn() && request.auth.uid == request.resource.data.userId;
+      
+      // Subcategories collection
+      match /subcategories/{subcategoryId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn() && get(/databases/$(database)/documents/categories/$(categoryId)).data.userId == request.auth.uid;
+      }
+    }
+
+    // User Categories (for custom categories)
+    match /users/{userId}/categories/{categoryId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Category Budgets
+    match /users/{userId}/categoryBudgets/{budgetId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow write: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Category Transactions
+    match /users/{userId}/transactions/{transactionId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create: if isSignedIn() && 
+                   request.auth.uid == userId && 
+                   isValidCategoryTransaction();
+      allow update: if isSignedIn() && 
+                   request.auth.uid == userId && 
+                   isValidCategoryTransaction();
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
     // Validation functions
     function isValidBill() {
       let data = request.resource.data;
@@ -157,9 +193,12 @@ service cloud.firestore {
 
     function isValidCategory() {
       let data = request.resource.data;
-      return data.name is string && data.name.size() > 0 &&
+      return data.keys().hasAll(['name', 'icon', 'color', 'type']) &&
+             data.name is string && 
+             data.name.size() > 0 &&
              data.icon is string &&
-             (data.budget == null || isValidAmount(data.budget));
+             data.color is string &&
+             data.type in ['expense', 'income', 'savings', 'investment'];
     }
 
     function isValidSavingsGoal() {
@@ -185,6 +224,16 @@ service cloud.firestore {
              data.accountNumber is string && 
              data.accountType is string &&
              isValidAmount(data.balance);
+    }
+
+    function isValidCategoryTransaction() {
+      let data = request.resource.data;
+      return data.keys().hasAll(['amount', 'categoryId', 'date', 'type']) &&
+             data.amount is number && 
+             data.amount > 0 &&
+             data.categoryId is string &&
+             data.type in ['expense', 'income'] &&
+             data.date is timestamp;
     }
   }
 } 

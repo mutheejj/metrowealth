@@ -110,41 +110,46 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 buildNavItem(
-                  icon: Icons.home_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
+                  Icons.home_outlined,
+                  'Home',
+                  false,
+                  () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const HomePage()),
                   ),
                 ),
                 buildNavItem(
-                  icon: Icons.category_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
+                  Icons.category_outlined,
+                  'Categories',
+                  false,
+                  () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const CategoriesPage()),
                   ),
                 ),
                 buildNavItem(
-                  icon: Icons.receipt_long_outlined,
-                  isSelected: true, // Keep transactions selected
-                  onTap: () => Navigator.pushReplacement(
+                  Icons.receipt_long_outlined,
+                  'Transactions',
+                  true,
+                  () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const TransactionsPage()),
                   ),
                 ),
                 buildNavItem(
-                  icon: Icons.analytics_outlined,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
+                  Icons.analytics_outlined,
+                  'Analysis',
+                  false,
+                  () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const AnalysisPage()),
                   ),
                 ),
                 buildNavItem(
-                  icon: Icons.person_outline,
-                  isSelected: false,
-                  onTap: () => Navigator.pushReplacement(
+                  Icons.person_outline,
+                  'Profile',
+                  false,
+                  () => Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => const ProfilePage()),
                   ),
@@ -207,6 +212,35 @@ class _TransactionDetailPageState extends State<TransactionDetailPage> {
           const SizedBox(height: 8),
           Divider(color: Colors.grey[300]),
         ],
+      ),
+    );
+  }
+
+  Widget buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? Theme.of(context).primaryColor.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
