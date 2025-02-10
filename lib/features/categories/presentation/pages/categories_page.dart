@@ -10,6 +10,8 @@ import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
+import 'package:intl/intl.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
@@ -18,140 +20,214 @@ class CategoriesPage extends StatefulWidget {
   State<CategoriesPage> createState() => _CategoriesPageState();
 }
 
-class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProviderStateMixin {
-  TabController? _tabController;
+class _CategoriesPageState extends State<CategoriesPage> {
   late CategoryRepository _categoryRepository;
-  CategoryType _selectedType = CategoryType.expense;
-  double _totalBudget = 0;
+  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  double _totalBudget = 20000.00; // Example budget
   double _totalSpent = 0;
-  int _currentIndex = 1; // Set to 1 for Categories tab
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: CategoryType.values.length, vsync: this);
     _categoryRepository = CategoryRepository(FirebaseAuth.instance.currentUser!.uid);
-    
-    _tabController?.addListener(() {
-      if (_tabController?.indexIsChanging ?? false) {
-        setState(() {
-          _selectedType = CategoryType.values[_tabController?.index ?? 0];
-        });
-      }
-    });
-  }
-
-  @override
-  void dispose() {
-    _tabController?.dispose();
-    super.dispose();
   }
 
   void _calculateTotals(List<CategoryModel> categories) {
-    _totalBudget = categories.fold(0, (sum, cat) => sum + cat.budget);
     _totalSpent = categories.fold(0, (sum, cat) => sum + cat.spent);
-  }
-
-  void _onNavItemTapped(int index) {
-    if (index == _currentIndex) return;
-    
-    switch (index) {
-      case 0:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const HomePage()),
-        );
-        break;
-      case 2:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const TransactionsPage()),
-        );
-        break;
-      case 3:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const AnalysisPage()),
-        );
-        break;
-      case 4:
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => const ProfilePage()),
-        );
-        break;
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_tabController == null) return const SizedBox();
-    
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: Column(
-          children: [
-            _buildHeader(),
-            Expanded(
-              child: StreamBuilder<List<CategoryModel>>(
-                stream: _categoryRepository.getCategoriesByType(_selectedType),
-                builder: (context, snapshot) {
-                  if (snapshot.hasError) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.error_outline, size: 48, color: AppColors.error),
-                          const SizedBox(height: 16),
-                          Text(
-                            'Error: ${snapshot.error}',
-                            style: TextStyle(color: AppColors.error),
-                          ),
-                        ],
+      backgroundColor: const Color(0xFFB71C1C),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          'Categories',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 20,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: Stack(
+              children: [
+                const Icon(Icons.notifications_outlined, color: Colors.white),
+                Positioned(
+                  right: 0,
+                  top: 0,
+                  child: Container(
+                    padding: const EdgeInsets.all(2),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    constraints: const BoxConstraints(
+                      minWidth: 14,
+                      minHeight: 14,
+                    ),
+                    child: const Text(
+                      '2',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 8,
                       ),
-                    );
-                  }
-
-                  if (!snapshot.hasData) {
-                    return const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Notifications coming soon!'),
+                  duration: Duration(seconds: 2),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      _currencyFormat.format(_totalSpent),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
                       ),
-                    );
-                  }
-
-                  final categories = snapshot.data!;
-                  _calculateTotals(categories);
-                  
-                  if (categories.isEmpty) {
-                    return _buildEmptyState();
-                  }
-
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: categories.length,
-                    itemBuilder: (context, index) {
-                      final category = categories[index];
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 8),
-                        child: CategoryCard(
-                          category: category,
-                          onEdit: () => _editCategory(category),
-                          onDelete: () => _deleteCategory(category),
-                        ),
-                      );
-                    },
-                  );
-                },
+                    ),
+                    const Spacer(),
+                    Text(
+                      _currencyFormat.format(_totalBudget),
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: (_totalSpent / _totalBudget).clamp(0, 1),
+                    backgroundColor: Colors.white.withOpacity(0.2),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                    minHeight: 8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${((_totalSpent / _totalBudget) * 100).toStringAsFixed(0)}% Of Your Expenses',
+                  style: const TextStyle(
+                    color: Colors.white70,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Color(0xFFF0F8FF),
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(30),
+                ),
               ),
+              child: _buildCategoryGrid(),
+            ),
+          ),
+        ],
+      ),
+      bottomNavigationBar: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.2),
+              spreadRadius: 1,
+              blurRadius: 10,
+              offset: const Offset(0, -3),
             ),
           ],
         ),
-      ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onNavItemTapped,
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                Expanded(
+                  child: _buildNavItem(
+                    Icons.home_outlined,
+                    'Home',
+                    false,
+                    () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const HomePage()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    Icons.category_outlined,
+                    'Categories',
+                    true,
+                    () {},
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    Icons.analytics_outlined,
+                    'Analysis',
+                    false,
+                    () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const AnalysisPage()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    Icons.receipt_long_outlined,
+                    'Transactions',
+                    false,
+                    () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const TransactionsPage()),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: _buildNavItem(
+                    Icons.person_outline,
+                    'Profile',
+                    false,
+                    () => Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (context) => const ProfilePage()),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddCategorySheet,
@@ -161,129 +237,134 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
     );
   }
 
-  Widget _buildHeader() {
-    return Container(
-      color: AppColors.primary,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Categories',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.white,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    _buildSummaryCard(
-                      'Total Budget',
-                      _totalBudget,
-                      Icons.account_balance_wallet,
-                      Colors.blue,
-                    ),
-                    _buildSummaryCard(
-                      'Total Spent',
-                      _totalSpent,
-                      Icons.shopping_cart,
-                      _totalSpent > _totalBudget ? AppColors.error : AppColors.success,
-                    ),
-                  ],
-                ),
-              ],
+  Widget _buildCategoryGrid() {
+    return StreamBuilder<List<CategoryModel>>(
+      stream: _categoryRepository.getCategories(),
+      builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return _buildError(snapshot.error.toString());
+        }
+
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final categories = snapshot.data!;
+        _calculateTotals(categories);
+
+        return GridView.builder(
+          padding: const EdgeInsets.all(20),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 3,
+            childAspectRatio: 1,
+            crossAxisSpacing: 16,
+            mainAxisSpacing: 16,
+          ),
+          itemCount: categories.length + 1, // +1 for "More" button
+          itemBuilder: (context, index) {
+            if (index == categories.length) {
+              return _buildMoreButton();
+            }
+            return _buildCategoryItem(categories[index]);
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildCategoryItem(CategoryModel category) {
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => CategoryDetailPage(category: category),
+        ),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue[100],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              IconData(
+                int.parse('0x${category.icon}'),
+                fontFamily: 'MaterialIcons',
+              ),
+              color: Colors.blue[900],
+              size: 32,
             ),
-          ),
-          TabBar(
-            controller: _tabController!,
-            isScrollable: true,
-            indicatorColor: AppColors.white,
-            tabs: CategoryType.values.map((type) {
-              return Tab(
-                text: type.toString().split('.').last.toUpperCase(),
-              );
-            }).toList(),
-          ),
-        ],
+            const SizedBox(height: 8),
+            Text(
+              category.name,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue[900],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildSummaryCard(String title, double amount, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 8),
-          Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
+  Widget _buildMoreButton() {
+    return InkWell(
+      onTap: _showAddCategorySheet,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.blue[100],
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add,
+              color: Colors.blue[900],
+              size: 32,
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '\$${amount.toStringAsFixed(2)}',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 8),
+            Text(
+              'More',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.blue[900],
+              ),
+              textAlign: TextAlign.center,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildError(String error) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.category_outlined,
-            size: 64,
-            color: Colors.grey[400],
-          ),
+          Icon(Icons.error_outline, size: 48, color: Colors.red[300]),
           const SizedBox(height: 16),
           Text(
-            'No ${_selectedType.toString().split('.').last.toLowerCase()} categories',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey[600],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Add a category to start tracking your expenses',
-            style: TextStyle(
-              color: Colors.grey[500],
-            ),
+            'Error: $error',
+            style: TextStyle(color: Colors.red[300]),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
-            onPressed: _showAddCategorySheet,
+            onPressed: () => setState(() {}),
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: const Color(0xFFB71C1C),
               foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
             ),
-            icon: const Icon(Icons.add),
-            label: const Text('Add Category'),
+            icon: const Icon(Icons.refresh),
+            label: const Text('Retry'),
           ),
         ],
       ),
@@ -301,7 +382,7 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: AddCategorySheet(
-          type: _selectedType,
+          type: CategoryType.expense,
           onAdd: (category) async {
             try {
               await _categoryRepository.addCategory(category);
@@ -329,53 +410,27 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
     );
   }
 
-  Future<void> _editCategory(CategoryModel category) async {
-    // Show edit category dialog/sheet
-  }
-
-  Future<void> _deleteCategory(CategoryModel category) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Category'),
-        content: Text('Are you sure you want to delete ${category.name}?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('CANCEL'),
+  Widget _buildNavItem(IconData icon, String label, bool isSelected, VoidCallback onTap) {
+    return InkWell(
+      onTap: onTap,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            icon,
+            color: isSelected ? AppColors.primary : Colors.grey,
           ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? AppColors.primary : Colors.grey,
+              fontSize: 12,
+              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
             ),
-            child: const Text('DELETE'),
           ),
         ],
       ),
     );
-
-    if (confirmed ?? false) {
-      try {
-        await _categoryRepository.deleteCategory(category.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Category deleted successfully'),
-              backgroundColor: Colors.green,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error deleting category: $e'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    }
   }
 } 

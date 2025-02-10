@@ -16,7 +16,7 @@ class CategoryRepository {
   // Stream all categories
   Stream<List<CategoryModel>> getCategories() {
     return _categoriesCollection
-        .orderBy('name')
+        .orderBy('lastUpdated', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => CategoryModel.fromFirestore(doc))
@@ -27,7 +27,7 @@ class CategoryRepository {
   Stream<List<CategoryModel>> getCategoriesByType(CategoryType type) {
     return _categoriesCollection
         .where('type', isEqualTo: type.toString().split('.').last)
-        .orderBy('name')
+        .orderBy('lastUpdated', descending: true)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) => CategoryModel.fromFirestore(doc))
@@ -49,52 +49,72 @@ class CategoryRepository {
     return _categoriesCollection.doc(categoryId).delete();
   }
 
-  // Update category budget
-  Future<void> updateCategoryBudget(String categoryId, double budget) {
-    return _categoriesCollection.doc(categoryId).update({'budget': budget});
-  }
-
-  // Add subcategory
-  Future<void> addSubcategory(String categoryId, SubcategoryModel subcategory) async {
+  // Add transaction to category
+  Future<void> addTransaction(String categoryId, TransactionModel transaction) async {
     final category = await _categoriesCollection.doc(categoryId).get();
     final categoryData = CategoryModel.fromFirestore(category);
     
-    final updatedSubcategories = [...categoryData.subcategories, subcategory];
+    final updatedTransactions = [...categoryData.transactions, transaction];
+    final newSpent = categoryData.spent + transaction.amount;
     
     return _categoriesCollection.doc(categoryId).update({
-      'subcategories': updatedSubcategories.map((e) => e.toMap()).toList(),
+      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
+      'spent': newSpent,
+      'lastUpdated': Timestamp.now(),
     });
   }
 
-  // Update subcategory
-  Future<void> updateSubcategory(
+  // Update transaction
+  Future<void> updateTransaction(
     String categoryId, 
-    SubcategoryModel subcategory
+    TransactionModel oldTransaction,
+    TransactionModel newTransaction
   ) async {
     final category = await _categoriesCollection.doc(categoryId).get();
     final categoryData = CategoryModel.fromFirestore(category);
     
-    final updatedSubcategories = categoryData.subcategories.map((e) {
-      if (e.id == subcategory.id) return subcategory;
-      return e;
+    final updatedTransactions = categoryData.transactions.map((t) {
+      if (t.id == oldTransaction.id) return newTransaction;
+      return t;
     }).toList();
     
+    final spentDifference = newTransaction.amount - oldTransaction.amount;
+    final newSpent = categoryData.spent + spentDifference;
+    
     return _categoriesCollection.doc(categoryId).update({
-      'subcategories': updatedSubcategories.map((e) => e.toMap()).toList(),
+      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
+      'spent': newSpent,
+      'lastUpdated': Timestamp.now(),
     });
   }
 
-  // Delete subcategory
-  Future<void> deleteSubcategory(String categoryId, String subcategoryId) async {
+  // Delete transaction
+  Future<void> deleteTransaction(String categoryId, String transactionId) async {
     final category = await _categoriesCollection.doc(categoryId).get();
     final categoryData = CategoryModel.fromFirestore(category);
     
-    final updatedSubcategories = categoryData.subcategories
-        .where((e) => e.id != subcategoryId)
+    final transaction = categoryData.transactions
+        .firstWhere((t) => t.id == transactionId);
+    final updatedTransactions = categoryData.transactions
+        .where((t) => t.id != transactionId)
         .toList();
+    final newSpent = categoryData.spent - transaction.amount;
     
     return _categoriesCollection.doc(categoryId).update({
-      'subcategories': updatedSubcategories.map((e) => e.toMap()).toList(),
+      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
+      'spent': newSpent,
+      'lastUpdated': Timestamp.now(),
+    });
+  }
+
+  // Update budget settings
+  Future<void> updateBudgetSettings(
+    String categoryId, 
+    BudgetSettings settings
+  ) {
+    return _categoriesCollection.doc(categoryId).update({
+      'budgetSettings': settings.toMap(),
+      'lastUpdated': Timestamp.now(),
     });
   }
 
@@ -103,23 +123,16 @@ class CategoryRepository {
     DateTime startDate,
     DateTime endDate,
   ) async {
-    final transactions = await _firestore
-        .collection('users')
-        .doc(userId)
-        .collection('transactions')
-        .where('date', isGreaterThanOrEqualTo: startDate)
-        .where('date', isLessThanOrEqualTo: endDate)
-        .where('type', isEqualTo: 'expense')
-        .get();
-
+    final categories = await _categoriesCollection.get();
     final spending = <String, double>{};
     
-    for (var doc in transactions.docs) {
-      final data = doc.data();
-      final categoryId = data['categoryId'] as String;
-      final amount = (data['amount'] as num).toDouble();
-      
-      spending[categoryId] = (spending[categoryId] ?? 0) + amount;
+    for (var doc in categories.docs) {
+      final category = CategoryModel.fromFirestore(doc);
+      final transactions = category.getTransactionsByDateRange(startDate, endDate);
+      spending[category.id] = transactions.fold(
+        0.0, 
+        (sum, t) => sum + t.amount
+      );
     }
     
     return spending;
@@ -130,27 +143,116 @@ class CategoryRepository {
     final defaultCategories = [
       CategoryModel(
         id: 'food',
-        name: 'Food & Dining',
-        icon: 'restaurant',
-        color: Colors.green,
+        name: 'Food',
+        icon: 'e56c', // restaurant icon
+        color: Colors.blue,
         type: CategoryType.expense,
         userId: userId,
         isDefault: true,
-        subcategories: [
-          SubcategoryModel(
-            id: 'groceries',
-            name: 'Groceries',
-            icon: 'shopping_cart',
-          ),
-          SubcategoryModel(
-            id: 'restaurants',
-            name: 'Restaurants',
-            icon: 'restaurant',
-          ),
-        ],
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 500,
+          warningThreshold: 80,
+        ),
         lastUpdated: DateTime.now(),
       ),
-      // Add more default categories...
+      CategoryModel(
+        id: 'transport',
+        name: 'Transport',
+        icon: 'e530', // directions_bus icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 200,
+          warningThreshold: 80,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'medicine',
+        name: 'Medicine',
+        icon: 'e3ed', // medical_services icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 100,
+          warningThreshold: 90,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'groceries',
+        name: 'Groceries',
+        icon: 'e8cc', // shopping_bag icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 400,
+          warningThreshold: 80,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'rent',
+        name: 'Rent',
+        icon: 'e88a', // house icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 1500,
+          warningThreshold: 95,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'gifts',
+        name: 'Gifts',
+        icon: 'e8f6', // card_giftcard icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 100,
+          warningThreshold: 80,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'savings',
+        name: 'Savings',
+        icon: 'e850', // savings icon
+        color: Colors.blue,
+        type: CategoryType.savings,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 1000,
+          warningThreshold: 90,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
+      CategoryModel(
+        id: 'entertainment',
+        name: 'Entertainment',
+        icon: 'e307', // local_activity icon
+        color: Colors.blue,
+        type: CategoryType.expense,
+        userId: userId,
+        isDefault: true,
+        budgetSettings: BudgetSettings(
+          monthlyLimit: 200,
+          warningThreshold: 80,
+        ),
+        lastUpdated: DateTime.now(),
+      ),
     ];
 
     final batch = _firestore.batch();
@@ -161,5 +263,28 @@ class CategoryRepository {
     }
 
     return batch.commit();
+  }
+
+  // Get category statistics
+  Future<Map<String, dynamic>> getCategoryStatistics(String categoryId) async {
+    final category = await _categoriesCollection.doc(categoryId).get();
+    final categoryData = CategoryModel.fromFirestore(category);
+    
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final yearStart = DateTime(now.year, 1, 1);
+    
+    return {
+      'dailyAverage': categoryData.dailyAverage,
+      'monthlyTotal': categoryData.monthlyTotal,
+      'monthOverMonthGrowth': categoryData.monthOverMonthGrowth,
+      'yearToDate': categoryData.getTransactionsByDateRange(yearStart, now)
+          .fold(0.0, (sum, t) => sum + t.amount),
+      'recurringTransactions': categoryData.getRecurringTransactions().length,
+      'totalTransactions': categoryData.transactions.length,
+      'lastTransaction': categoryData.transactions.isNotEmpty 
+          ? categoryData.transactions.first 
+          : null,
+    };
   }
 } 

@@ -51,9 +51,9 @@ class CategoryCard extends StatelessWidget {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        if (category.hasSubcategories)
+                        if (category.hasTransactions)
                           Text(
-                            '${category.subcategories.length} subcategories',
+                            '${category.transactions.length} transactions',
                             style: TextStyle(
                               fontSize: 12,
                               color: Colors.grey[600],
@@ -109,6 +109,30 @@ class CategoryCard extends StatelessWidget {
                     color: Colors.grey[600],
                   ),
                 ),
+                if (category.monthOverMonthGrowth != 0) ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        category.monthOverMonthGrowth > 0 
+                            ? Icons.trending_up 
+                            : Icons.trending_down,
+                        size: 16,
+                        color: category.monthOverMonthGrowth > 0 
+                            ? Colors.red 
+                            : Colors.green,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        '${category.monthOverMonthGrowth.abs().toStringAsFixed(1)}% vs last month',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.grey[600],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ],
           ),
