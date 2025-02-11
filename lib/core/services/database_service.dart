@@ -1008,8 +1008,6 @@ class DatabaseService {
   }
 
   Future<Map<String, double>> getSpendingByCategory(String userId, DateTime startDate, DateTime endDate) async {
-    final spending = <String, double>{};
-    
     try {
       final snapshot = await _db
           .collection('transactions')
@@ -1019,29 +1017,16 @@ class DatabaseService {
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .get();
 
+      final spending = <String, double>{};
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
         final categoryId = data['categoryId'] as String;
         final amount = (data['amount'] as num).toDouble();
-        
-        // Get category name
-        final categoryDoc = await _db
-            .collection('users')
-            .doc(userId)
-            .collection('categories')
-            .doc(categoryId)
-            .get();
-            
-        if (categoryDoc.exists) {
-          final categoryData = categoryDoc.data() as Map<String, dynamic>;
-          final categoryName = categoryData['name'] as String;
-          spending[categoryName] = (spending[categoryName] ?? 0) + amount;
-        }
+        spending[categoryId] = (spending[categoryId] ?? 0) + amount;
       }
-      
       return spending;
     } catch (e) {
-      print('Error getting spending by category: $e');
+      debugPrint('Error getting spending by category: $e');
       return {};
     }
   }
@@ -1049,19 +1034,48 @@ class DatabaseService {
   Future<double> getTotalBudget(String userId) async {
     try {
       final snapshot = await _db
-          .collection('users')
-          .doc(userId)
           .collection('categories')
-          .where('type', isEqualTo: 'expense')
+          .where('userId', isEqualTo: userId)
           .get();
 
       return snapshot.docs.fold<double>(
         0.0,
-        (sum, doc) => sum + ((doc.data() as Map<String, dynamic>)['budget'] ?? 0.0),
+        (sum, doc) {
+          final data = doc.data() as Map<String, dynamic>;
+          return sum + ((data['budget'] as num?)?.toDouble() ?? 0.0);
+        },
       );
     } catch (e) {
-      print('Error getting total budget: $e');
+      debugPrint('Error getting total budget: $e');
       return 0.0;
+    }
+  }
+
+  // Get transactions by period (Daily, Weekly, Monthly, Year)
+  Future<List<dynamic>> getTransactionsByPeriod(String period, DateTime startDate, DateTime endDate) async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId == null) throw 'User not authenticated';
+
+      var query = _db
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .orderBy('date', descending: true);
+
+      final snapshot = await query.get();
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'id': doc.id,
+          ...data,
+          'date': (data['date'] as Timestamp).toDate(),
+        };
+      }).toList();
+    } catch (e) {
+      debugPrint('Error getting transactions by period: $e');
+      return [];
     }
   }
 } 
