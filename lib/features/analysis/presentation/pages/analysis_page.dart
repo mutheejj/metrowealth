@@ -283,10 +283,12 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
   Widget _buildChartSection() {
     return Card(
       margin: const EdgeInsets.all(16),
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: Container(
         constraints: const BoxConstraints(
-          minHeight: 300,
-          maxHeight: 400,
+          minHeight: 200,
+          maxHeight: 300,
         ),
         width: double.infinity,
         child: SingleChildScrollView(
@@ -296,7 +298,7 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
               minWidth: MediaQuery.of(context).size.width - 64,
               maxWidth: max(
                 MediaQuery.of(context).size.width - 64,
-                _barGroups.length * 100.0,
+                _barGroups.length * 80.0,
               ),
             ),
             padding: const EdgeInsets.all(16),
@@ -304,15 +306,22 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
               BarChartData(
                 alignment: BarChartAlignment.spaceAround,
                 maxY: _maxY,
+                minY: 0,
                 barTouchData: BarTouchData(
                   enabled: true,
                   touchTooltipData: BarTouchTooltipData(
-                    tooltipBgColor: Colors.blueGrey,
+                    tooltipBgColor: Colors.blueGrey.shade700,
+                    tooltipRoundedRadius: 8,
+                    tooltipPadding: const EdgeInsets.all(8),
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                      if (rod.toY == 0) return null;
                       final amount = rod.toY;
                       return BarTooltipItem(
                         NumberFormat.currency(symbol: 'KSH ').format(amount),
-                        const TextStyle(color: Colors.white),
+                        const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       );
                     },
                   ),
@@ -330,7 +339,11 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
                           padding: const EdgeInsets.only(top: 8),
                           child: Text(
                             _titles[value.toInt()],
-                            style: const TextStyle(fontSize: 12),
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         );
                       },
@@ -341,12 +354,17 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
                       showTitles: true,
                       reservedSize: 40,
                       getTitlesWidget: (value, meta) {
+                        if (value == 0) return const SizedBox.shrink();
                         return Text(
                           NumberFormat.compact().format(value),
-                          style: const TextStyle(fontSize: 12),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
                         );
                       },
-                      interval: _maxY / 5,
+                      interval: _maxY / 4,
                     ),
                   ),
                   rightTitles: const AxisTitles(
@@ -358,16 +376,43 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
                 ),
                 gridData: FlGridData(
                   show: true,
-                  horizontalInterval: _maxY > 0 ? _maxY / 5 : 200,
+                  drawVerticalLine: false,
+                  horizontalInterval: _maxY / 4,
                   getDrawingHorizontalLine: (value) {
-                    return const FlLine(
-                      color: Colors.grey,
+                    return FlLine(
+                      color: Colors.grey[300],
                       strokeWidth: 0.5,
                     );
                   },
                 ),
-                borderData: FlBorderData(show: false),
-                barGroups: _barGroups,
+                borderData: FlBorderData(
+                  show: true,
+                  border: Border(
+                    bottom: BorderSide(color: Colors.grey[300]!),
+                    left: BorderSide(color: Colors.grey[300]!),
+                  ),
+                ),
+                barGroups: _barGroups.map((group) {
+                  return BarChartGroupData(
+                    x: group.x,
+                    barRods: group.barRods.map((rod) {
+                      return BarChartRodData(
+                        toY: rod.toY,
+                        color: rod.color,
+                        width: 12,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(4),
+                        ),
+                        backDrawRodData: BackgroundBarChartRodData(
+                          show: true,
+                          toY: _maxY,
+                          color: Colors.grey[100],
+                        ),
+                      );
+                    }).toList(),
+                    showingTooltipIndicators: group.barRods.any((rod) => rod.toY > 0) ? [0, 1] : [],
+                  );
+                }).toList(),
               ),
             ),
           ),
@@ -377,6 +422,27 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
   }
 
   Widget _buildInsightsCard() {
+    String periodText = '';
+    String avgPrefix = '';
+    switch (_selectedPeriod) {
+      case 'Daily':
+        periodText = 'Daily';
+        avgPrefix = 'Daily';
+        break;
+      case 'Weekly':
+        periodText = 'Weekly';
+        avgPrefix = 'Weekly';
+        break;
+      case 'Monthly':
+        periodText = 'Monthly';
+        avgPrefix = 'Monthly';
+        break;
+      case 'Yearly':
+        periodText = 'Yearly';
+        avgPrefix = 'Yearly';
+        break;
+    }
+
     return Card(
       margin: const EdgeInsets.all(16),
       elevation: 4,
@@ -386,28 +452,28 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Financial Insights',
-              style: TextStyle(
+            Text(
+              '$periodText Financial Insights',
+              style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
             ),
             const SizedBox(height: 16),
             _buildInsightItem(
-              'Monthly Average Income',
+              '$avgPrefix Average Income',
               _monthlyAvgIncome,
               Icons.trending_up,
               Colors.green,
             ),
             _buildInsightItem(
-              'Monthly Average Expense',
+              '$avgPrefix Average Expense',
               _monthlyAvgExpense,
               Icons.trending_down,
               Colors.red,
             ),
             _buildInsightItem(
-              'Savings Rate',
+              '$periodText Savings Rate',
               _savingsRate,
               Icons.savings,
               Colors.blue,
@@ -415,7 +481,7 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
             ),
             if (_topExpenseCategory.isNotEmpty)
               _buildInsightItem(
-                'Top Expense Category',
+                '$periodText Top Expense',
                 0,
                 Icons.category,
                 Colors.orange,
@@ -702,6 +768,8 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
         bottom: TabBar(
           controller: _tabController,
           indicatorColor: Colors.white,
+          labelColor: Colors.black,
+          unselectedLabelColor: Colors.black54,
           tabs: const [
             Tab(text: 'Overview'),
             Tab(text: 'Categories'),
