@@ -2,14 +2,18 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:metrowealth/core/services/database_service.dart';
 import 'package:metrowealth/features/auth/data/models/user_model.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../../categories/data/repositories/category_repository.dart';
 
 class AuthRepository {
   final FirebaseAuth _auth;
   final DatabaseService _db;
+  final FirebaseFirestore _firestore;
 
   AuthRepository() 
     : _auth = FirebaseAuth.instance,
-      _db = DatabaseService();
+      _db = DatabaseService(),
+      _firestore = FirebaseFirestore.instance;
 
   // Get current user
   User? get currentUser => _auth.currentUser;
@@ -18,7 +22,7 @@ class AuthRepository {
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
   // Sign Up
-  Future<void> signUp({
+  Future<UserCredential> signUp({
     required String email,
     required String password,
     required String fullName,
@@ -42,10 +46,25 @@ class AuthRepository {
         createdAt: DateTime.now(),
       );
 
-      await _db.createUserProfile(user);
+      // Create user document first
+      await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set(user.toMap());
+
+      // Initialize default categories
+      final categoryRepo = CategoryRepository(userCredential.user!.uid);
+      try {
+        await categoryRepo.initializeDefaultCategories();
+      } catch (e) {
+        print('Error initializing categories: $e');
+        // Don't rethrow - allow signup to continue even if category init fails
+      }
+
+      return userCredential;
     } catch (e) {
       debugPrint('Error in signUp: $e');
-      rethrow; // Rethrow to handle in UI
+      rethrow;
     }
   }
 

@@ -669,19 +669,17 @@ class DatabaseService {
       final transaction = TransactionModel(
         id: payment.id,
         userId: bill.userId,
+        categoryId: bill.categoryId,
         amount: payment.amount,
         title: 'Payment for ${bill.title}',
         type: TransactionType.billPayment,
-        category: 'Bill Payment',
         date: payment.paymentDate,
         description: 'Payment for ${bill.title}',
         attachmentUrl: payment.receipt,
         billId: bill.id,
         metadata: {
-          'billId': bill.id,
           'billTitle': bill.title,
-          'paymentId': payment.id,
-          'isAutoPay': payment.isAutoPayment,
+          'billDueDate': bill.dueDate,
         },
       );
       batch.set(transactionRef, transaction.toMap());
@@ -736,8 +734,8 @@ class DatabaseService {
           totalIncome += transaction.amount;
         } else if (transaction.type == TransactionType.expense) {
           totalExpenses += transaction.amount;
-          categoryTotals[transaction.category] =
-              (categoryTotals[transaction.category] ?? 0) + transaction.amount;
+          categoryTotals[transaction.categoryId] =
+              (categoryTotals[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
 
@@ -793,8 +791,8 @@ class DatabaseService {
           totalIncome += transaction.amount;
         } else if (transaction.type == TransactionType.expense) {
           totalExpenses += transaction.amount;
-          categorySpending[transaction.category] = 
-              (categorySpending[transaction.category] ?? 0) + transaction.amount;
+          categorySpending[transaction.categoryId] = 
+              (categorySpending[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
 
@@ -884,11 +882,11 @@ class DatabaseService {
 
       for (var doc in query.docs) {
         final transaction = TransactionModel.fromFirestore(doc);
-        categorySpending[transaction.category] = 
-            (categorySpending[transaction.category] ?? 0) + transaction.amount;
+        categorySpending[transaction.categoryId] = 
+            (categorySpending[transaction.categoryId] ?? 0) + transaction.amount;
         
-        categoryTransactions[transaction.category] = 
-            (categoryTransactions[transaction.category] ?? [])..add(transaction);
+        categoryTransactions[transaction.categoryId] = 
+            (categoryTransactions[transaction.categoryId] ?? [])..add(transaction);
       }
 
       return {

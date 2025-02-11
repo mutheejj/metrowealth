@@ -30,7 +30,7 @@ class BillModel {
   final String userId;
   final String title;
   final double amount;
-  final String category;
+  final String categoryId;
   final DateTime dueDate;
   final BillStatus status;
   final String? description;
@@ -47,7 +47,7 @@ class BillModel {
     required this.userId,
     required this.title,
     required this.amount,
-    required this.category,
+    required this.categoryId,
     required this.dueDate,
     this.status = BillStatus.pending,
     this.description,
@@ -66,7 +66,7 @@ class BillModel {
       'userId': userId,
       'title': title,
       'amount': amount,
-      'category': category,
+      'categoryId': categoryId,
       'dueDate': dueDate.toIso8601String(),
       'status': status.toString(),
       'description': description,
@@ -86,7 +86,7 @@ class BillModel {
       userId: map['userId'] ?? '',
       title: map['title'] ?? '',
       amount: (map['amount'] ?? 0.0).toDouble(),
-      category: map['category'] ?? '',
+      categoryId: map['categoryId'] ?? '',
       dueDate: map['dueDate'] is Timestamp 
           ? (map['dueDate'] as Timestamp).toDate()
           : DateTime.parse(map['dueDate']),
@@ -119,7 +119,7 @@ class BillModel {
     String? userId,
     String? title,
     double? amount,
-    String? category,
+    String? categoryId,
     DateTime? dueDate,
     BillStatus? status,
     String? description,
@@ -136,7 +136,7 @@ class BillModel {
       userId: userId ?? this.userId,
       title: title ?? this.title,
       amount: amount ?? this.amount,
-      category: category ?? this.category,
+      categoryId: categoryId ?? this.categoryId,
       dueDate: dueDate ?? this.dueDate,
       status: status ?? this.status,
       description: description ?? this.description,
@@ -157,7 +157,7 @@ class BillModel {
       userId: data['userId'],
       title: data['title'],
       amount: (data['amount'] ?? 0.0).toDouble(),
-      category: data['category'],
+      categoryId: data['categoryId'] ?? '',
       dueDate: data['dueDate'] is Timestamp 
           ? (data['dueDate'] as Timestamp).toDate()
           : DateTime.parse(data['dueDate'].toString()),

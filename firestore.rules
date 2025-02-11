@@ -7,7 +7,7 @@ service cloud.firestore {
     }
     
     function isOwner(userId) {
-      return isSignedIn() && request.auth.uid == userId;
+      return request.auth.uid == userId;
     }
 
     function isValidAmount(amount) {
@@ -15,219 +15,66 @@ service cloud.firestore {
     }
 
     function isValidDate(dateField) {
-      return dateField is timestamp || 
-             (dateField is string && dateField.matches('^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}'));
+      return dateField is timestamp;
     }
 
-    // User profiles
-    match /users/{userId} {
-      allow read: if isOwner(userId);
-      allow create: if isSignedIn() && 
-                   request.auth.uid == userId &&
-                   request.resource.data.keys().hasAll(['id', 'fullName', 'email']) &&
-                   request.resource.data.id == userId;
-      allow update: if isOwner(userId) &&
-                   (!('id' in request.resource.data) || request.resource.data.id == userId) &&
-                   (!('email' in request.resource.data) || request.resource.data.email == resource.data.email);
-      allow delete: if isOwner(userId);
-
-      // Nested collections
-      match /{collection}/{document} {
-        allow read, write: if isOwner(userId);
-      }
-    }
-
-    // Categories collection
-    match /categories/{categoryId} {
-      allow read: if isSignedIn();
-      allow write: if isSignedIn() && request.auth.uid == request.resource.data.userId;
-      
-      // Subcategories collection
-      match /subcategories/{subcategoryId} {
-        allow read: if isSignedIn();
-        allow write: if isSignedIn() && get(/databases/$(database)/documents/categories/$(categoryId)).data.userId == request.auth.uid;
-      }
-    }
-
-    // User Categories (for custom categories)
-    match /users/{userId}/categories/{categoryId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Category Budgets
-    match /users/{userId}/categoryBudgets/{budgetId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow write: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Category Transactions
-    match /users/{userId}/transactions/{transactionId} {
-      allow read: if isSignedIn() && request.auth.uid == userId;
-      allow create: if isSignedIn() && 
-                   request.auth.uid == userId && 
-                   isValidCategoryTransaction();
-      allow update: if isSignedIn() && 
-                   request.auth.uid == userId && 
-                   isValidCategoryTransaction();
-      allow delete: if isSignedIn() && request.auth.uid == userId;
-    }
-
-    // Transactions collection
-    match /transactions/{transactionId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && 
-                   request.resource.data.userId == request.auth.uid &&
-                   isValidTransaction();
-      allow update: if isSignedIn() && 
-                   resource.data.userId == request.auth.uid &&
-                   isValidTransactionUpdate();
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    // Savings goals collection
-    match /savings_goals/{goalId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && 
-                   request.resource.data.userId == request.auth.uid &&
-                   isValidSavingsGoal();
-      allow update: if isSignedIn() && 
-                   resource.data.userId == request.auth.uid &&
-                   isValidSavingsGoal();
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    // Bills collection
-    match /bills/{billId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && 
-                   request.resource.data.userId == request.auth.uid &&
-                   isValidBill();
-      allow update: if isSignedIn() && 
-                   resource.data.userId == request.auth.uid &&
-                   isValidBillUpdate();
-      allow delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-
-      // Bill payments subcollection
-      match /payments/{paymentId} {
-        allow read: if isSignedIn() && get(/databases/$(database)/documents/bills/$(billId)).data.userId == request.auth.uid;
-        allow write: if isSignedIn() && get(/databases/$(database)/documents/bills/$(billId)).data.userId == request.auth.uid;
-      }
-    }
-
-    // Bill Categories collection
-    match /billCategories/{categoryId} {
-      allow read: if isSignedIn();
-      allow write: if false; // Only admins can modify categories
-    }
-
-    // Bill Reminders collection
-    match /billReminders/{reminderId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow write: if isSignedIn() && request.resource.data.userId == request.auth.uid;
-    }
-
-    // Bank accounts
-    match /bank_accounts/{accountId} {
-      allow read: if isSignedIn() && resource.data.userId == request.auth.uid;
-      allow create: if isSignedIn() && 
-                   request.resource.data.userId == request.auth.uid &&
-                   isValidBankAccount();
-      allow update, delete: if isSignedIn() && resource.data.userId == request.auth.uid;
-    }
-
-    // Loans
-    match /loans/{loanId} {
-      allow read: if isSignedIn() && 
-                 request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && 
-                   request.auth.uid == request.resource.data.userId;
-      allow update: if isSignedIn() && 
-                   request.auth.uid == resource.data.userId;
-    }
-
-    // Savings accounts
-    match /savings_accounts/{accountId} {
-      allow read: if isSignedIn() && 
-                 request.auth.uid == resource.data.userId;
-      allow create: if isSignedIn() && 
-                   request.auth.uid == request.resource.data.userId;
-      allow update: if isSignedIn() && 
-                   request.auth.uid == resource.data.userId;
-    }
-
-    // Validation functions
-    function isValidTransaction() {
-      let data = request.resource.data;
-      return isValidAmount(data.amount) &&
-             data.type in ['expense', 'income', 'transfer', 'deposit', 'withdrawal', 
-                          'savingsDeposit', 'savingsWithdrawal', 'loanPayment', 
-                          'loanDisbursement', 'billPayment', 'investment'] &&
-             isValidDate(data.date) &&
-             data.category is string &&
-             (data.description == null || data.description is string) &&
-             data.status in ['pending', 'completed', 'failed', 'cancelled', 'reversed'];
-    }
-
-    function isValidTransactionUpdate() {
-      let data = request.resource.data;
-      return data.userId == resource.data.userId && // Can't change owner
-             isValidTransaction();
-    }
-
-    function isValidCategory() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['name', 'icon', 'color', 'type']) &&
+    function isValidCategory(data) {
+      return data.keys().hasAll(['name', 'icon', 'color', 'type', 'userId']) &&
              data.name is string && 
              data.name.size() > 0 &&
              data.icon is string &&
-             data.color is string &&
-             data.type in ['expense', 'income', 'savings', 'investment'];
+             data.userId is string &&
+             data.type in ['expense', 'income', 'savings', 'investment', 'debt', 'budget'] &&
+             isOwner(data.userId);
     }
 
-    function isValidSavingsGoal() {
-      let data = request.resource.data;
-      return data.name is string && data.name.size() > 0 &&
-             isValidAmount(data.targetAmount) &&
-             isValidDate(data.startDate) &&
-             (data.maturityDate == null || isValidDate(data.maturityDate)) &&
-             isValidAmount(data.interestRate);
-    }
-
-    function isValidCategoryTransaction() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['amount', 'categoryId', 'date', 'type']) &&
-             data.amount is number && 
-             data.amount > 0 &&
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['amount', 'categoryId', 'date', 'userId', 'type']) &&
+             isValidAmount(data.amount) &&
              data.categoryId is string &&
-             data.type in ['expense', 'income'] &&
-             data.date is timestamp;
+             data.userId is string &&
+             isOwner(data.userId) &&
+             isValidDate(data.date);
     }
 
-    function isValidBill() {
-      let data = request.resource.data;
-      return data.keys().hasAll(['title', 'amount', 'userId', 'category', 'dueDate']) &&
-             data.title is string && data.title.size() > 0 &&
-             data.amount is number && data.amount >= 0 &&
-             data.userId == request.auth.uid &&
-             data.category is string &&
-             isValidDate(data.dueDate) &&
-             (!('status' in data) || data.status in ['pending', 'paid', 'overdue']) &&
-             (!('recurringType' in data) || data.recurringType in ['none', 'daily', 'weekly', 'monthly', 'yearly']);
-    }
+    // Users collection
+    match /users/{userId} {
+      allow read: if isSignedIn() && isOwner(userId);
+      allow write: if isSignedIn() && isOwner(userId);
+      
+      // Categories subcollection
+      match /categories/{categoryId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn() && isOwner(userId);
+        allow update: if isSignedIn() && isOwner(userId);
+        allow delete: if isSignedIn() && isOwner(userId);
+      }
 
-    function isValidBillUpdate() {
-      let data = request.resource.data;
-      return data.userId == resource.data.userId && 
-             isValidBill();
-    }
+      // Transactions subcollection
+      match /transactions/{transactionId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn() && isOwner(userId);
+        allow update: if isSignedIn() && isOwner(userId);
+        allow delete: if isSignedIn() && isOwner(userId);
+      }
 
-    function isValidBankAccount() {
-      let data = request.resource.data;
-      return data.bankName is string && data.bankName.size() > 0 &&
-             data.accountNumber is string && 
-             data.accountType is string &&
-             isValidAmount(data.balance);
+      // Bills subcollection
+      match /bills/{billId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+
+      // Savings goals subcollection
+      match /savingsGoals/{goalId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if isSignedIn() && isOwner(userId);
+      }
+
+      // Allow access to all other subcollections
+      match /{subcollection}/{docId} {
+        allow read: if isSignedIn() && isOwner(userId);
+        allow write: if isSignedIn() && isOwner(userId);
+      }
     }
   }
 } 

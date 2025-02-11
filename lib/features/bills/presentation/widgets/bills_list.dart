@@ -5,14 +5,29 @@ import 'package:metrowealth/features/bills/data/models/bill_model.dart';
 import 'package:metrowealth/features/bills/data/repositories/bill_repository.dart';
 import 'package:metrowealth/features/bills/presentation/pages/bill_details_page.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
-class BillsList extends StatelessWidget {
+class BillsList extends StatefulWidget {
   final String status;
 
   const BillsList({
     Key? key,
     required this.status,
   }) : super(key: key);
+
+  @override
+  State<BillsList> createState() => _BillsListState();
+}
+
+class _BillsListState extends State<BillsList> {
+  late final CategoryRepository _categoryRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    _categoryRepository = CategoryRepository(FirebaseAuth.instance.currentUser!.uid);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,7 +44,7 @@ class BillsList extends StatelessWidget {
 
         final bills = snapshot.data!;
         if (bills.isEmpty) {
-          return Center(child: Text('No ${status.toLowerCase()} bills'));
+          return Center(child: Text('No ${widget.status.toLowerCase()} bills'));
         }
 
         return ListView.builder(
@@ -42,94 +57,75 @@ class BillsList extends StatelessWidget {
   }
 
   Widget _buildBillCard(BillModel bill) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 16),
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: _getCategoryColor(bill.category),
-          child: Icon(_getCategoryIcon(bill.category), color: Colors.white),
-        ),
-        title: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(bill.title),
-            Text(
-              DateFormat('MMM d, y').format(bill.dueDate),
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
+    return FutureBuilder<CategoryModel?>(
+      future: _categoryRepository.getCategoryById(bill.categoryId),
+      builder: (context, snapshot) {
+        final category = snapshot.data;
+        return Card(
+          margin: const EdgeInsets.only(bottom: 16),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: category?.color ?? Colors.grey,
+              child: Icon(
+                category?.icon != null 
+                    ? IconData(int.parse(category!.icon), fontFamily: 'MaterialIcons')
+                    : Icons.category,
+                color: Colors.white
               ),
             ),
-          ],
-        ),
-        subtitle: Text(
-          'Due: ${DateFormat('MMM d, y').format(bill.dueDate)}',
-        ),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '\$${bill.amount.toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+            title: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(bill.title),
+                Text(
+                  DateFormat('MMM d, y').format(bill.dueDate),
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey[600],
+                  ),
+                ),
+              ],
             ),
-            Text(
-              _getStatusText(bill.status),
-              style: TextStyle(
-                color: _getStatusColor(bill.status),
-                fontSize: 12,
-              ),
+            subtitle: Text(
+              'Category: ${category?.name ?? 'Loading...'}',
             ),
-          ],
-        ),
-        onTap: () => _navigateToBillDetails(bill),
-      ),
+            trailing: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  '\$${bill.amount.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  _getStatusText(bill.status),
+                  style: TextStyle(
+                    color: _getStatusColor(bill.status),
+                    fontSize: 12,
+                  ),
+                ),
+              ],
+            ),
+            onTap: () => _navigateToBillDetails(bill),
+          ),
+        );
+      }
     );
   }
 
   Stream<List<BillModel>> _getBillsStream() {
     final repository = BillRepository(FirebaseAuth.instance.currentUser!.uid);
     
-    switch (status.toLowerCase()) {
+    switch (widget.status.toLowerCase()) {
       case 'upcoming':
         return repository.getUpcomingBills();
       case 'paid':
         return repository.getPaidBills();
       default:
         return repository.getAllBills();
-    }
-  }
-
-  Color _getCategoryColor(String category) {
-    switch (category.toLowerCase()) {
-      case 'utilities':
-        return Colors.blue;
-      case 'rent':
-        return Colors.green;
-      case 'insurance':
-        return Colors.purple;
-      case 'phone':
-        return Colors.orange;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
-      case 'utilities':
-        return Icons.flash_on;
-      case 'rent':
-        return Icons.home;
-      case 'insurance':
-        return Icons.security;
-      case 'phone':
-        return Icons.phone;
-      default:
-        return Icons.receipt;
     }
   }
 

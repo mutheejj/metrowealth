@@ -3,6 +3,8 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/core/services/database_service.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:intl/intl.dart';
+import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
 class RecentTransactions extends StatefulWidget {
   final String userId;
@@ -22,10 +24,12 @@ class _RecentTransactionsState extends State<RecentTransactions> {
   final _dateFormat = DateFormat('MMM dd');
   bool _isLoading = true;
   List<TransactionModel> _transactions = [];
+  late final CategoryRepository _categoryRepository;
 
   @override
   void initState() {
     super.initState();
+    _categoryRepository = CategoryRepository(widget.userId);
     _loadTransactions();
   }
 
@@ -132,12 +136,21 @@ class _RecentTransactionsState extends State<RecentTransactions> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  Text(
-                    transaction.category,
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 14,
-                    ),
+                  FutureBuilder<CategoryModel?>(
+                    future: _categoryRepository.getCategoryById(transaction.categoryId),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        final category = snapshot.data!;
+                        return Text(
+                          category.name,
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 14,
+                          ),
+                        );
+                      }
+                      return const Text('Loading...');
+                    },
                   ),
                 ],
               ),

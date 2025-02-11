@@ -22,6 +22,8 @@ import 'package:metrowealth/features/home/presentation/widgets/spending_insights
 import 'package:metrowealth/features/home/presentation/widgets/budget_overview.dart';
 import 'package:metrowealth/features/home/presentation/widgets/savings_goals_progress.dart';
 import 'package:metrowealth/features/home/presentation/widgets/bill_reminders.dart';
+import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
 // Move enum to top level, outside of any class
 enum AnalysisPeriod { daily, weekly, monthly }
@@ -43,6 +45,7 @@ class _HomePageState extends State<HomePage> {
   bool _isLoading = true;
   int _currentIndex = 0;
   AnalysisPeriod _selectedPeriod = AnalysisPeriod.monthly;
+  late final CategoryRepository _categoryRepository;
 
   @override
   void initState() {
@@ -56,6 +59,9 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _user = user;
         _isLoading = false;
+        if (user != null) {
+          _categoryRepository = CategoryRepository(user.id);
+        }
       });
     } catch (e) {
       setState(() => _isLoading = false);
@@ -381,8 +387,8 @@ class _HomePageState extends State<HomePage> {
 
   Widget _buildPeriodTransactions() {
     DateTime now = DateTime.now();
-    late DateTime startDate;  // Add late keyword
-    late String periodTitle;  // Add late keyword
+    late DateTime startDate;
+    late String periodTitle;
 
     switch (_selectedPeriod) {
       case AnalysisPeriod.daily:
@@ -424,17 +430,23 @@ class _HomePageState extends State<HomePage> {
 
         return Column(
           children: transactions.map((transaction) {
-            return Column(
-              children: [
-                _buildExpenseItem(
-                  transaction.category,
-                  DateFormat('HH:mm - MMM dd').format(transaction.date),
-                  transaction.description ?? 'No description',
-                  transaction.amount,
-                  isIncome: transaction.type == TransactionType.income,
-                ),
-                const Divider(),
-              ],
+            return FutureBuilder<CategoryModel?>(
+              future: _categoryRepository.getCategoryById(transaction.categoryId),
+              builder: (context, snapshot) {
+                final category = snapshot.data;
+                return Column(
+                  children: [
+                    _buildExpenseItem(
+                      category?.name ?? 'Unknown Category',
+                      DateFormat('HH:mm - MMM dd').format(transaction.date),
+                      transaction.description ?? 'No description',
+                      transaction.amount,
+                      isIncome: transaction.type == TransactionType.income,
+                    ),
+                    const Divider(),
+                  ],
+                );
+              },
             );
           }).toList(),
         );
@@ -689,7 +701,16 @@ class _HomePageState extends State<HomePage> {
             _buildBillDetailRow('Amount', _currencyFormat.format(bill.amount)),
             _buildBillDetailRow('Due Date', DateFormat('MMM d, y').format(bill.dueDate)),
             _buildBillDetailRow('Status', bill.status.toString().split('.').last),
-            _buildBillDetailRow('Category', bill.category),
+            FutureBuilder<CategoryModel?>(
+              future: _categoryRepository.getCategoryById(bill.categoryId),
+              builder: (context, snapshot) {
+                final category = snapshot.data;
+                return _buildBillDetailRow(
+                  'Category',
+                  category?.name ?? 'Loading...',
+                );
+              }
+            ),
             if (bill.description != null)
               _buildBillDetailRow('Description', bill.description!),
             if (bill.accountNumber != null)
@@ -1109,43 +1130,44 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget _buildTransactionItem(TransactionModel transaction) {
-    final isExpense = transaction.type == TransactionType.expense;
-    final amount = isExpense ? -transaction.amount : transaction.amount;
-    final color = isExpense ? Colors.red : Colors.green;
-
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: color.withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          isExpense ? Icons.remove : Icons.add,
-          color: color,
-        ),
-      ),
-      title: Text(
-        transaction.category,
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        DateFormat('MMM d, y').format(transaction.date),
-        style: TextStyle(
-          color: Colors.grey[600],
-          fontSize: 12,
-        ),
-      ),
-      trailing: Text(
-        _currencyFormat.format(amount),
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
+    return FutureBuilder<CategoryModel?>(
+      future: _categoryRepository.getCategoryById(transaction.categoryId),
+      builder: (context, snapshot) {
+        final category = snapshot.data;
+        return ListTile(
+          leading: CircleAvatar(
+            backgroundColor: category?.color ?? Colors.grey[200],
+            child: Icon(
+              category != null 
+                  ? IconData(int.parse('0x${category.icon}'), fontFamily: 'MaterialIcons')
+                  : Icons.category,
+              color: Colors.white,
+            ),
+          ),
+          title: Text(
+            transaction.title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            category?.name ?? 'Loading...',
+            style: TextStyle(
+              color: Colors.grey[600],
+              fontSize: 12,
+            ),
+          ),
+          trailing: Text(
+            _currencyFormat.format(transaction.amount),
+            style: TextStyle(
+              color: transaction.type == TransactionType.expense
+                  ? Colors.red
+                  : Colors.green,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        );
+      },
     );
   }
 

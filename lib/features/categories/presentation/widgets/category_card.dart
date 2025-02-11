@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:intl/intl.dart';
-import '../../data/models/category_model.dart';
 
 class CategoryCard extends StatelessWidget {
   final CategoryModel category;
@@ -16,158 +17,154 @@ class CategoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final progress = category.budget > 0 ? (category.spent / category.budget).clamp(0.0, 1.0) : 0.0;
+    final isOverBudget = category.spent > category.budget && category.budget > 0;
     final currencyFormat = NumberFormat.currency(symbol: '\$');
-    final percentageSpent = category.percentageSpent;
 
-    return Card(
-      child: InkWell(
-        onTap: onEdit,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  CircleAvatar(
-                    backgroundColor: category.color.withOpacity(0.2),
-                    child: Icon(
-                      IconData(
-                        int.parse('0x${category.icon}'),
-                        fontFamily: 'MaterialIcons',
+    // Safely parse the icon code with error handling
+    IconData iconData;
+    try {
+      iconData = IconData(
+        int.parse('0x${category.icon}'),
+        fontFamily: 'MaterialIcons',
+      );
+    } catch (e) {
+      iconData = Icons.category_outlined;
+    }
+
+    return Hero(
+      tag: 'category_${category.id}',
+      child: Card(
+        elevation: 2,
+        shadowColor: category.color.withOpacity(0.3),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(
+            color: category.color.withOpacity(0.1),
+            width: 1,
+          ),
+        ),
+        child: InkWell(
+          onTap: onEdit,
+          borderRadius: BorderRadius.circular(16),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: category.color.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
                       ),
-                      color: category.color,
+                      child: Icon(
+                        iconData,
+                        color: category.color,
+                        size: 24,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          category.name,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (category.hasTransactions)
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                           Text(
-                            '${category.transactions.length} transactions',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
+                            category.name,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
                             ),
                           ),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.more_vert),
-                    onPressed: () => _showOptions(context),
-                  ),
-                ],
-              ),
-              if (category.budget > 0) ...[
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      currencyFormat.format(category.spent),
-                      style: TextStyle(
-                        color: category.isOverBudget ? Colors.red : Colors.green,
-                        fontWeight: FontWeight.bold,
+                          if (category.budget > 0) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              '${currencyFormat.format(category.spent)} of ${currencyFormat.format(category.budget)}',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: isOverBudget ? Colors.red : Colors.grey[600],
+                                fontWeight: isOverBudget ? FontWeight.bold : FontWeight.normal,
+                              ),
+                            ),
+                          ],
+                        ],
                       ),
                     ),
-                    Text(
-                      'of ${currencyFormat.format(category.budget)}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.delete_outline),
+                      color: Colors.red[300],
+                      onPressed: onDelete,
+                      tooltip: 'Delete Category',
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(4),
-                  child: LinearProgressIndicator(
-                    value: percentageSpent / 100,
-                    backgroundColor: Colors.grey[200],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      category.isOverBudget ? Colors.red : Colors.green,
-                    ),
-                    minHeight: 6,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${percentageSpent.toStringAsFixed(1)}% spent',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                if (category.monthOverMonthGrowth != 0) ...[
-                  const SizedBox(height: 8),
-                  Row(
+                if (category.budget > 0) ...[
+                  const SizedBox(height: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        category.monthOverMonthGrowth > 0 
-                            ? Icons.trending_up 
-                            : Icons.trending_down,
-                        size: 16,
-                        color: category.monthOverMonthGrowth > 0 
-                            ? Colors.red 
-                            : Colors.green,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            '${(progress * 100).toStringAsFixed(1)}% spent',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isOverBudget ? Colors.red : Colors.grey[600],
+                            ),
+                          ),
+                          Text(
+                            isOverBudget
+                                ? 'Over budget by ${currencyFormat.format(category.spent - category.budget)}'
+                                : 'Remaining: ${currencyFormat.format(category.budget - category.spent)}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isOverBudget ? Colors.red : Colors.green,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${category.monthOverMonthGrowth.abs().toStringAsFixed(1)}% vs last month',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                        ),
+                      const SizedBox(height: 8),
+                      Stack(
+                        children: [
+                          Container(
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: Colors.grey[200],
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          ),
+                          AnimatedFractionallySizedBox(
+                            duration: const Duration(milliseconds: 300),
+                            widthFactor: progress,
+                            child: Container(
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: isOverBudget ? Colors.red : category.color,
+                                borderRadius: BorderRadius.circular(4),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (isOverBudget ? Colors.red : category.color).withOpacity(0.2),
+                                    blurRadius: 4,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-    );
-  }
-
-  void _showOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (context) => Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ListTile(
-            leading: const Icon(Icons.edit),
-            title: const Text('Edit Category'),
-            onTap: () {
-              Navigator.pop(context);
-              onEdit();
-            },
-          ),
-          if (!category.isDefault)
-            ListTile(
-              leading: const Icon(Icons.delete, color: Colors.red),
-              title: const Text(
-                'Delete Category',
-                style: TextStyle(color: Colors.red),
-              ),
-              onTap: () {
-                Navigator.pop(context);
-                onDelete();
-              },
-            ),
-        ],
       ),
     );
   }

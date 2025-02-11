@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
-import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
-import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
+import 'package:metrowealth/features/transactions/data/repositories/transaction_repository.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
-import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
 class AddExpensePage extends StatefulWidget {
   final CategoryModel category;
@@ -28,6 +28,14 @@ class _AddExpensePageState extends State<AddExpensePage> {
   TransactionFrequency _selectedFrequency = TransactionFrequency.oneTime;
   List<String> _selectedTags = [];
   bool _isLoading = false;
+  late final TransactionRepository _transactionRepository;
+
+  @override
+  void initState() {
+    super.initState();
+    final userId = FirebaseAuth.instance.currentUser!.uid;
+    _transactionRepository = TransactionRepository(userId);
+  }
 
   @override
   void dispose() {
@@ -55,25 +63,30 @@ class _AddExpensePageState extends State<AddExpensePage> {
     setState(() => _isLoading = true);
 
     try {
+      final userId = FirebaseAuth.instance.currentUser!.uid;
       final transaction = TransactionModel(
         id: const Uuid().v4(),
+        userId: userId,
+        categoryId: widget.category.id,
         amount: double.parse(_amountController.text),
+        description: _messageController.text.isNotEmpty ? _messageController.text : '',
+        title: _titleController.text,
         date: _selectedDate,
-        description: _titleController.text,
+        type: TransactionType.expense,
         frequency: _selectedFrequency,
         tags: _selectedTags,
-        note: _messageController.text.isNotEmpty ? _messageController.text : null,
+        notes: _messageController.text.isNotEmpty ? _messageController.text : null,
       );
 
-      final updatedCategory = widget.category.copyWith(
-        transactions: [...widget.category.transactions, transaction],
-        spent: widget.category.spent + transaction.amount,
-      );
-
-      final repository = CategoryRepository(widget.category.userId);
-      await repository.updateCategory(updatedCategory);
+      await _transactionRepository.addTransaction(transaction);
 
       if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Transaction added successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
         Navigator.pop(context);
       }
     } catch (e) {
@@ -111,12 +124,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
             fontWeight: FontWeight.w500,
           ),
         ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.lock_outline, color: Colors.white),
-            onPressed: () {},
-          ),
-        ],
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -139,6 +146,10 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 _buildAmountField(),
                 const SizedBox(height: 20),
                 _buildTitleField(),
+                const SizedBox(height: 20),
+                _buildFrequencyField(),
+                const SizedBox(height: 20),
+                _buildTagsField(),
                 const SizedBox(height: 20),
                 _buildMessageField(),
                 const SizedBox(height: 40),
@@ -219,8 +230,6 @@ class _AddExpensePageState extends State<AddExpensePage> {
                 widget.category.name,
                 style: const TextStyle(fontSize: 16),
               ),
-              const Spacer(),
-              Icon(Icons.arrow_drop_down, color: Colors.grey[600]),
             ],
           ),
         ),
@@ -276,7 +285,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Expense Title',
+          'Title',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
@@ -310,16 +319,96 @@ class _AddExpensePageState extends State<AddExpensePage> {
     );
   }
 
+  Widget _buildFrequencyField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Frequency',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: Colors.grey[100],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: DropdownButtonHideUnderline(
+            child: DropdownButton<TransactionFrequency>(
+              value: _selectedFrequency,
+              isExpanded: true,
+              items: TransactionFrequency.values.map((frequency) {
+                return DropdownMenuItem(
+                  value: frequency,
+                  child: Text(
+                    frequency.toString().split('.').last,
+                    style: const TextStyle(fontSize: 16),
+                  ),
+                );
+              }).toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() => _selectedFrequency = value);
+                }
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTagsField() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Text(
+              'Tags',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            TextButton(
+              onPressed: _showAddTagDialog,
+              child: const Text('Add Tag'),
+            ),
+          ],
+        ),
+        if (_selectedTags.isNotEmpty)
+          Wrap(
+            spacing: 8,
+            children: _selectedTags.map((tag) {
+              return Chip(
+                label: Text(tag),
+                onDeleted: () {
+                  setState(() {
+                    _selectedTags.remove(tag);
+                  });
+                },
+              );
+            }).toList(),
+          ),
+      ],
+    );
+  }
+
   Widget _buildMessageField() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Enter Message',
+          'Notes',
           style: TextStyle(
             fontSize: 14,
             fontWeight: FontWeight.w500,
-            color: Colors.red,
           ),
         ),
         const SizedBox(height: 8),

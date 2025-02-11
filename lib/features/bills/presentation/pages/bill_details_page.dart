@@ -4,12 +4,17 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/bills/data/models/bill_model.dart';
 import 'package:metrowealth/features/bills/presentation/pages/edit_bill_page.dart';
 import 'package:metrowealth/features/bills/presentation/widgets/payment_sheet.dart';
+import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
 class BillDetailsPage extends StatelessWidget {
   final BillModel bill;
   final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  late final CategoryRepository _categoryRepository;
 
-  BillDetailsPage({super.key, required this.bill});
+  BillDetailsPage({super.key, required this.bill}) {
+    _categoryRepository = CategoryRepository(bill.userId);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -98,17 +103,23 @@ class BillDetailsPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              'Bill Details',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+            _buildDetailRow('Amount', _currencyFormat.format(bill.amount)),
+            _buildDetailRow('Due Date', DateFormat('MMM d, y').format(bill.dueDate)),
+            _buildDetailRow('Status', bill.status.toString().split('.').last),
+            FutureBuilder<CategoryModel?>(
+              future: _categoryRepository.getCategoryById(bill.categoryId),
+              builder: (context, snapshot) {
+                final category = snapshot.data;
+                return _buildDetailRow(
+                  'Category',
+                  category?.name ?? 'Loading...',
+                );
+              }
             ),
-            const SizedBox(height: 16),
-            _buildDetailRow('Category', bill.category),
             if (bill.description != null)
               _buildDetailRow('Description', bill.description!),
+            if (bill.accountNumber != null)
+              _buildDetailRow('Account Number', bill.accountNumber!),
             _buildDetailRow('Recurring', bill.recurringType ?? 'No'),
             if (bill.recurringType != null)
               _buildDetailRow('Next Due Date', 

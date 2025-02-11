@@ -1,290 +1,224 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
 import '../models/category_model.dart';
 
 class CategoryRepository {
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final String userId;
+  final CollectionReference _categoriesCollection;
 
-  CategoryRepository(this.userId);
+  CategoryRepository(this.userId)
+      : _categoriesCollection = FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
+            .collection('categories');
 
-  // Get user's categories collection reference
-  CollectionReference get _categoriesCollection => 
-      _firestore.collection('users').doc(userId).collection('categories');
+  // Initialize default categories for a new user
+  Future<void> initializeDefaultCategories() async {
+    try {
+      final existingCategories = await _categoriesCollection.limit(1).get();
+      if (existingCategories.docs.isNotEmpty) {
+        print('Categories already exist for user');
+        return;
+      }
 
-  // Stream all categories
-  Stream<List<CategoryModel>> getCategories() {
-    return _categoriesCollection
-        .orderBy('lastUpdated', descending: true)
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CategoryModel.fromFirestore(doc))
-            .toList());
+      final defaultCategories = CategoryModel.getDefaultCategories(userId);
+      final batch = FirebaseFirestore.instance.batch();
+      
+      for (var category in defaultCategories) {
+        final docRef = _categoriesCollection.doc();
+        batch.set(docRef, category.toMap());
+      }
+      
+      await batch.commit();
+      print('Successfully initialized default categories');
+    } catch (e) {
+      print('Error initializing default categories: $e');
+      rethrow;
+    }
   }
 
-  // Stream categories by type
+  // Get categories by type
   Stream<List<CategoryModel>> getCategoriesByType(CategoryType type) {
     return _categoriesCollection
         .where('type', isEqualTo: type.toString().split('.').last)
-        .orderBy('lastUpdated', descending: true)
+        .where('userId', isEqualTo: userId)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => CategoryModel.fromFirestore(doc))
-            .toList());
-  }
-
-  // Add new category
-  Future<DocumentReference> addCategory(CategoryModel category) {
-    return _categoriesCollection.add(category.toMap());
-  }
-
-  // Update category
-  Future<void> updateCategory(CategoryModel category) {
-    return _categoriesCollection.doc(category.id).update(category.toMap());
-  }
-
-  // Delete category
-  Future<void> deleteCategory(String categoryId) {
-    return _categoriesCollection.doc(categoryId).delete();
-  }
-
-  // Add transaction to category
-  Future<void> addTransaction(String categoryId, TransactionModel transaction) async {
-    final category = await _categoriesCollection.doc(categoryId).get();
-    final categoryData = CategoryModel.fromFirestore(category);
-    
-    final updatedTransactions = [...categoryData.transactions, transaction];
-    final newSpent = categoryData.spent + transaction.amount;
-    
-    return _categoriesCollection.doc(categoryId).update({
-      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
-      'spent': newSpent,
-      'lastUpdated': Timestamp.now(),
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => CategoryModel.fromFirestore(doc))
+          .toList();
     });
   }
 
-  // Update transaction
-  Future<void> updateTransaction(
-    String categoryId, 
-    TransactionModel oldTransaction,
-    TransactionModel newTransaction
-  ) async {
-    final category = await _categoriesCollection.doc(categoryId).get();
-    final categoryData = CategoryModel.fromFirestore(category);
-    
-    final updatedTransactions = categoryData.transactions.map((t) {
-      if (t.id == oldTransaction.id) return newTransaction;
-      return t;
-    }).toList();
-    
-    final spentDifference = newTransaction.amount - oldTransaction.amount;
-    final newSpent = categoryData.spent + spentDifference;
-    
-    return _categoriesCollection.doc(categoryId).update({
-      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
-      'spent': newSpent,
-      'lastUpdated': Timestamp.now(),
+  // Get all categories
+  Stream<List<CategoryModel>> getCategories() {
+    return _categoriesCollection
+        .where('userId', isEqualTo: userId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => CategoryModel.fromFirestore(doc))
+          .toList();
     });
   }
 
-  // Delete transaction
-  Future<void> deleteTransaction(String categoryId, String transactionId) async {
-    final category = await _categoriesCollection.doc(categoryId).get();
-    final categoryData = CategoryModel.fromFirestore(category);
-    
-    final transaction = categoryData.transactions
-        .firstWhere((t) => t.id == transactionId);
-    final updatedTransactions = categoryData.transactions
-        .where((t) => t.id != transactionId)
-        .toList();
-    final newSpent = categoryData.spent - transaction.amount;
-    
-    return _categoriesCollection.doc(categoryId).update({
-      'transactions': updatedTransactions.map((t) => t.toMap()).toList(),
-      'spent': newSpent,
-      'lastUpdated': Timestamp.now(),
-    });
-  }
-
-  // Update budget settings
-  Future<void> updateBudgetSettings(
-    String categoryId, 
-    BudgetSettings settings
-  ) {
-    return _categoriesCollection.doc(categoryId).update({
-      'budgetSettings': settings.toMap(),
-      'lastUpdated': Timestamp.now(),
-    });
-  }
-
-  // Get category spending for a time period
-  Future<Map<String, double>> getCategorySpending(
-    DateTime startDate,
-    DateTime endDate,
-  ) async {
-    final categories = await _categoriesCollection.get();
-    final spending = <String, double>{};
-    
-    for (var doc in categories.docs) {
-      final category = CategoryModel.fromFirestore(doc);
-      final transactions = category.getTransactionsByDateRange(startDate, endDate);
-      spending[category.id] = transactions.fold(
-        0.0, 
-        (sum, t) => sum + t.amount
+  // Add a new category
+  Future<DocumentReference> addCategory(CategoryModel category) async {
+    try {
+      // Create a new document reference
+      final docRef = _categoriesCollection.doc();
+      
+      // Create a complete category with the user ID
+      final categoryWithUser = category.copyWith(
+        userId: userId,
+        lastUpdated: DateTime.now(),
       );
+      
+      // Set the document data
+      await docRef.set(categoryWithUser.toMap());
+      return docRef;
+    } catch (e) {
+      print('Error adding category: $e');
+      rethrow;
     }
-    
-    return spending;
   }
 
-  // Initialize default categories for new user
-  Future<void> initializeDefaultCategories() async {
-    final defaultCategories = [
-      CategoryModel(
-        id: 'food',
-        name: 'Food',
-        icon: 'e56c', // restaurant icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 500,
-          warningThreshold: 80,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'transport',
-        name: 'Transport',
-        icon: 'e530', // directions_bus icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 200,
-          warningThreshold: 80,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'medicine',
-        name: 'Medicine',
-        icon: 'e3ed', // medical_services icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 100,
-          warningThreshold: 90,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'groceries',
-        name: 'Groceries',
-        icon: 'e8cc', // shopping_bag icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 400,
-          warningThreshold: 80,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'rent',
-        name: 'Rent',
-        icon: 'e88a', // house icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 1500,
-          warningThreshold: 95,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'gifts',
-        name: 'Gifts',
-        icon: 'e8f6', // card_giftcard icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 100,
-          warningThreshold: 80,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'savings',
-        name: 'Savings',
-        icon: 'e850', // savings icon
-        color: Colors.blue,
-        type: CategoryType.savings,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 1000,
-          warningThreshold: 90,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-      CategoryModel(
-        id: 'entertainment',
-        name: 'Entertainment',
-        icon: 'e307', // local_activity icon
-        color: Colors.blue,
-        type: CategoryType.expense,
-        userId: userId,
-        isDefault: true,
-        budgetSettings: BudgetSettings(
-          monthlyLimit: 200,
-          warningThreshold: 80,
-        ),
-        lastUpdated: DateTime.now(),
-      ),
-    ];
-
-    final batch = _firestore.batch();
-    
-    for (var category in defaultCategories) {
-      final docRef = _categoriesCollection.doc(category.id);
-      batch.set(docRef, category.toMap());
+  // Update a category
+  Future<void> updateCategory(CategoryModel category) async {
+    try {
+      // Ensure the category belongs to the current user
+      if (category.userId != userId) {
+        throw Exception('Cannot update category: Permission denied');
+      }
+      
+      await _categoriesCollection.doc(category.id).update(category.toMap());
+    } catch (e) {
+      print('Error updating category: $e');
+      rethrow;
     }
-
-    return batch.commit();
   }
 
-  // Get category statistics
-  Future<Map<String, dynamic>> getCategoryStatistics(String categoryId) async {
-    final category = await _categoriesCollection.doc(categoryId).get();
-    final categoryData = CategoryModel.fromFirestore(category);
-    
-    final now = DateTime.now();
-    final monthStart = DateTime(now.year, now.month, 1);
-    final yearStart = DateTime(now.year, 1, 1);
-    
-    return {
-      'dailyAverage': categoryData.dailyAverage,
-      'monthlyTotal': categoryData.monthlyTotal,
-      'monthOverMonthGrowth': categoryData.monthOverMonthGrowth,
-      'yearToDate': categoryData.getTransactionsByDateRange(yearStart, now)
-          .fold(0.0, (sum, t) => sum + t.amount),
-      'recurringTransactions': categoryData.getRecurringTransactions().length,
-      'totalTransactions': categoryData.transactions.length,
-      'lastTransaction': categoryData.transactions.isNotEmpty 
-          ? categoryData.transactions.first 
-          : null,
-    };
+  // Delete a category
+  Future<void> deleteCategory(String categoryId) async {
+    try {
+      // Verify ownership before deletion
+      final doc = await _categoriesCollection.doc(categoryId).get();
+      if (!doc.exists) {
+        throw Exception('Category not found');
+      }
+      
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['userId'] != userId) {
+        throw Exception('Cannot delete category: Permission denied');
+      }
+      
+      await _categoriesCollection.doc(categoryId).delete();
+    } catch (e) {
+      print('Error deleting category: $e');
+      rethrow;
+    }
+  }
+
+  // Get a single category
+  Future<CategoryModel?> getCategoryById(String categoryId) async {
+    try {
+      final doc = await _categoriesCollection.doc(categoryId).get();
+      if (!doc.exists) return null;
+      
+      final category = CategoryModel.fromFirestore(doc);
+      if (category.userId != userId) {
+        throw Exception('Cannot access category: Permission denied');
+      }
+      
+      return category;
+    } catch (e) {
+      print('Error getting category: $e');
+      rethrow;
+    }
+  }
+
+  // Get total spent amount for a category
+  Future<double> getCategorySpentAmount(String categoryId) async {
+    final doc = await _categoriesCollection.doc(categoryId).get();
+    if (!doc.exists) return 0.0;
+    final data = doc.data() as Map<String, dynamic>;
+    return (data['spent'] ?? 0.0).toDouble();
+  }
+
+  // Update category spent amount
+  Future<void> updateCategorySpentAmount(String categoryId, double amount) async {
+    try {
+      final doc = await _categoriesCollection.doc(categoryId).get();
+      if (!doc.exists) {
+        throw Exception('Category not found');
+      }
+      
+      final data = doc.data() as Map<String, dynamic>;
+      if (data['userId'] != userId) {
+        throw Exception('Cannot update category: Permission denied');
+      }
+      
+      await _categoriesCollection.doc(categoryId).update({
+        'spent': FieldValue.increment(amount),
+        'lastUpdated': FieldValue.serverTimestamp(),
+      });
+    } catch (e) {
+      print('Error updating category spent amount: $e');
+      rethrow;
+    }
+  }
+
+  // Get total budget for user
+  Future<double> getTotalBudget() async {
+    try {
+      final snapshot = await _categoriesCollection
+          .where('userId', isEqualTo: userId)
+          .get();
+      return snapshot.docs.fold<double>(
+        0.0,
+        (sum, doc) => sum + ((doc.data() as Map<String, dynamic>)['budget'] ?? 0.0),
+      );
+    } catch (e) {
+      print('Error getting total budget: $e');
+      rethrow;
+    }
+  }
+
+  // Get total spent for user
+  Future<double> getTotalSpent() async {
+    try {
+      final snapshot = await _categoriesCollection
+          .where('userId', isEqualTo: userId)
+          .get();
+      return snapshot.docs.fold<double>(
+        0.0,
+        (sum, doc) => sum + ((doc.data() as Map<String, dynamic>)['spent'] ?? 0.0),
+      );
+    } catch (e) {
+      print('Error getting total spent: $e');
+      rethrow;
+    }
+  }
+
+  // Reset monthly spent amounts
+  Future<void> resetMonthlySpent() async {
+    try {
+      final snapshot = await _categoriesCollection
+          .where('userId', isEqualTo: userId)
+          .get();
+      
+      final batch = FirebaseFirestore.instance.batch();
+      
+      for (var doc in snapshot.docs) {
+        batch.update(doc.reference, {
+          'spent': 0.0,
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      print('Error resetting monthly spent: $e');
+      rethrow;
+    }
   }
 } 
