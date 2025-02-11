@@ -681,6 +681,7 @@ class DatabaseService {
           'billTitle': bill.title,
           'billDueDate': bill.dueDate,
         },
+        tags: ['bill_payment', bill.categoryId],
       );
       batch.set(transactionRef, transaction.toMap());
 

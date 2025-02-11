@@ -11,6 +11,8 @@ import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/analysis/presentation/pages/analysis_page.dart';
 import 'package:metrowealth/features/transactions/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/add_expense_page.dart';
+import 'package:metrowealth/features/transactions/presentation/pages/add_income_page.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});
@@ -77,6 +79,28 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
         onAdd: _addCategory,
       ),
     );
+  }
+
+  void _navigateToAddTransaction(CategoryModel category) {
+    if (category.type == CategoryType.expense) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddExpensePage(
+            category: category,
+          ),
+        ),
+      );
+    } else {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => AddIncomePage(
+            category: category,
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _addCategory(CategoryModel category) async {
@@ -244,14 +268,19 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
             ),
             child: TabBar(
               controller: _tabController,
-              labelColor: AppColors.primary,
+              labelColor: _tabController.index == 0 
+                  ? AppColors.primary 
+                  : Colors.green,
               unselectedLabelColor: Colors.grey,
-              indicatorColor: AppColors.primary,
+              indicatorColor: _tabController.index == 0 
+                  ? AppColors.primary 
+                  : Colors.green,
               indicatorWeight: 3,
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
               ),
+              onTap: (index) => setState(() {}),
               tabs: const [
                 Tab(text: 'Expenses'),
                 Tab(text: 'Income'),
@@ -329,7 +358,9 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.category_outlined,
+                  type == CategoryType.income 
+                      ? Icons.account_balance_wallet_outlined
+                      : Icons.category_outlined,
                   size: 80,
                   color: Colors.grey[400],
                 ),
@@ -346,7 +377,9 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 32),
                   child: Text(
-                    'Add a category to start tracking your ${type.toString().split('.').last.toLowerCase()}',
+                    type == CategoryType.income
+                        ? 'Add a category to start tracking your income sources'
+                        : 'Add a category to start tracking your expenses',
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       color: Colors.grey[600],
@@ -358,7 +391,9 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
                 ElevatedButton.icon(
                   onPressed: _showAddCategorySheet,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
+                    backgroundColor: type == CategoryType.income 
+                        ? Colors.green 
+                        : AppColors.primary,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 24,
                       vertical: 12,
@@ -368,7 +403,11 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
                     ),
                   ),
                   icon: const Icon(Icons.add),
-                  label: const Text('Add Category'),
+                  label: Text(
+                    type == CategoryType.income
+                        ? 'Add Income Source'
+                        : 'Add Category',
+                  ),
                 ),
               ],
             ),
@@ -388,14 +427,7 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
                 child: CategoryCard(
                   category: category,
                   onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => CategoryDetailPage(
-                          category: category,
-                        ),
-                      ),
-                    );
+                    _navigateToAddTransaction(category);
                   },
                   onDelete: () => _deleteCategory(category),
                 ),

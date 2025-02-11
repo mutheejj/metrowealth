@@ -61,6 +61,7 @@ class TransactionModel {
 
   Map<String, dynamic> toMap() {
     return {
+      'id': id,
       'userId': userId,
       'categoryId': categoryId,
       'recipientId': recipientId,
@@ -68,9 +69,9 @@ class TransactionModel {
       'description': description,
       'title': title,
       'date': Timestamp.fromDate(date),
-      'type': type.toString().split('.').last,
-      'status': status.toString().split('.').last,
-      'frequency': frequency.toString().split('.').last,
+      'type': type.toString(),
+      'status': status.toString(),
+      'frequency': frequency.toString(),
       'paymentMethod': paymentMethod,
       'tags': tags,
       'notes': notes,
@@ -85,34 +86,32 @@ class TransactionModel {
 
   factory TransactionModel.fromMap(Map<String, dynamic> map) {
     return TransactionModel(
-      id: map['id'] ?? '',
-      userId: map['userId'] ?? '',
-      categoryId: map['categoryId'] ?? '',
+      id: map['id'] as String,
+      userId: map['userId'] as String,
+      categoryId: map['categoryId'] as String,
       recipientId: map['recipientId'],
-      amount: (map['amount'] ?? 0.0).toDouble(),
-      description: map['description'] ?? '',
-      title: map['title'] ?? '',
+      amount: (map['amount'] as num).toDouble(),
+      description: map['description'] as String? ?? '',
+      title: map['title'] as String? ?? '',
       date: (map['date'] as Timestamp).toDate(),
       type: TransactionType.values.firstWhere(
-        (e) => e.toString().split('.').last == map['type'],
+        (e) => e.toString() == map['type'],
         orElse: () => TransactionType.expense,
       ),
       status: TransactionStatus.values.firstWhere(
-        (e) => e.toString().split('.').last == map['status'],
+        (e) => e.toString() == map['status'],
         orElse: () => TransactionStatus.completed,
       ),
       frequency: TransactionFrequency.values.firstWhere(
-        (e) => e.toString().split('.').last == map['frequency'],
+        (e) => e.toString() == map['frequency'],
         orElse: () => TransactionFrequency.oneTime,
       ),
       paymentMethod: map['paymentMethod'],
       tags: List<String>.from(map['tags'] ?? []),
       notes: map['notes'],
       location: map['location'],
-      createdAt: (map['createdAt'] as Timestamp).toDate(),
-      updatedAt: map['updatedAt'] != null 
-          ? (map['updatedAt'] as Timestamp).toDate()
-          : null,
+      createdAt: (map['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      updatedAt: (map['updatedAt'] as Timestamp?)?.toDate(),
       attachmentUrl: map['attachmentUrl'],
       billId: map['billId'],
       metadata: map['metadata'],

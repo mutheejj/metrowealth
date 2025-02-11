@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/transaction_model.dart';
+import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import '../../../categories/data/repositories/category_repository.dart';
 
 class TransactionRepository {
@@ -9,8 +9,6 @@ class TransactionRepository {
 
   TransactionRepository(this.userId) 
       : _transactionsCollection = FirebaseFirestore.instance
-            .collection('users')
-            .doc(userId)
             .collection('transactions')
             .withConverter<Map<String, dynamic>>(
               fromFirestore: (snapshot, _) => snapshot.data() ?? {},
@@ -21,6 +19,7 @@ class TransactionRepository {
   // Get all transactions for the current user
   Stream<List<TransactionModel>> getTransactionsStream() {
     return _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .orderBy('date', descending: true)
         .snapshots()
         .map((snapshot) {
@@ -37,6 +36,7 @@ class TransactionRepository {
   // Get transactions by category
   Stream<List<TransactionModel>> getTransactionsByCategory(String categoryId) {
     return _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('categoryId', isEqualTo: categoryId)
         .orderBy('date', descending: true)
         .snapshots()
@@ -54,6 +54,7 @@ class TransactionRepository {
   // Get transactions by type
   Stream<List<TransactionModel>> getTransactionsByType(TransactionType type) {
     return _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('type', isEqualTo: type.toString().split('.').last)
         .orderBy('date', descending: true)
         .snapshots()
@@ -74,6 +75,7 @@ class TransactionRepository {
     DateTime endDate,
   ) {
     return _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
         .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
         .orderBy('date', descending: true)
@@ -199,6 +201,7 @@ class TransactionRepository {
   // Get total income for a period
   Future<double> getTotalIncome({DateTime? startDate, DateTime? endDate}) async {
     var query = _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('type', isEqualTo: TransactionType.income.toString().split('.').last);
 
     if (startDate != null) {
@@ -221,6 +224,7 @@ class TransactionRepository {
   // Get total expenses for a period
   Future<double> getTotalExpenses({DateTime? startDate, DateTime? endDate}) async {
     var query = _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('type', isEqualTo: TransactionType.expense.toString().split('.').last);
 
     if (startDate != null) {
@@ -246,6 +250,7 @@ class TransactionRepository {
     DateTime? endDate,
   }) async {
     var query = _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('type', isEqualTo: TransactionType.expense.toString().split('.').last);
 
     if (startDate != null) {
@@ -271,6 +276,7 @@ class TransactionRepository {
   // Get recurring transactions
   Stream<List<TransactionModel>> getRecurringTransactions() {
     return _transactionsCollection
+        .where('userId', isEqualTo: userId)
         .where('frequency', isNotEqualTo: TransactionFrequency.oneTime.toString().split('.').last)
         .orderBy('frequency')
         .orderBy('date', descending: true)

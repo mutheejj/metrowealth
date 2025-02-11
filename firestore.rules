@@ -76,5 +76,25 @@ service cloud.firestore {
         allow write: if isSignedIn() && isOwner(userId);
       }
     }
+
+    // Root level collections
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidTransaction(request.resource.data);
+      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidTransaction(request.resource.data);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    match /categories/{categoryId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidCategory(request.resource.data);
+      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidCategory(request.resource.data);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    }
+
+    match /bills/{billId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow write: if isSignedIn() && isOwner(request.resource.data.userId);
+    }
   }
 } 
