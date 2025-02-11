@@ -817,9 +817,10 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
                                     }
                                   },
                                   selectedColor: Colors.white,
-                                  backgroundColor: Colors.white.withOpacity(0.3),
+                                  backgroundColor: Colors.white,
                                   labelStyle: TextStyle(
-                                    color: isSelected ? AppColors.primary : Colors.white,
+                                    color: isSelected ? Colors.red : Colors.black,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                                   ),
                                 ),
                               );

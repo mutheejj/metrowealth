@@ -248,11 +248,11 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         elevation: 0,
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFB71C1C),
         title: const Text(
           'Categories',
           style: TextStyle(
-            color: Colors.black,
+            color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.bold,
           ),
@@ -261,7 +261,7 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
           preferredSize: const Size.fromHeight(48),
           child: Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: const Color(0xFFB71C1C),
               border: Border(
                 bottom: BorderSide(
                   color: Colors.grey[200]!,
@@ -271,13 +271,9 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
             ),
             child: TabBar(
               controller: _tabController,
-              labelColor: _tabController.index == 0 
-                  ? AppColors.primary 
-                  : Colors.green,
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: _tabController.index == 0 
-                  ? AppColors.primary 
-                  : Colors.green,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
               indicatorWeight: 3,
               labelStyle: const TextStyle(
                 fontWeight: FontWeight.bold,
@@ -419,21 +415,22 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
 
         return AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
-          child: ListView.builder(
+          child: GridView.builder(
             key: ValueKey<int>(categories.length),
             padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              childAspectRatio: 1.1,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+            ),
             itemCount: categories.length,
             itemBuilder: (context, index) {
               final category = categories[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: CategoryCard(
-                  category: category,
-                  onEdit: () {
-                    _navigateToAddTransaction(category);
-                  },
-                  onDelete: () => _deleteCategory(category),
-                ),
+              return CategoryCard(
+                category: category,
+                onEdit: () => _navigateToAddTransaction(category),
+                onDelete: () => _deleteCategory(category),
               );
             },
           ),

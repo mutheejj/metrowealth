@@ -19,9 +19,8 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = category.budget > 0 ? (category.spent / category.budget).clamp(0.0, 1.0) : 0.0;
     final isOverBudget = category.spent > category.budget && category.budget > 0;
-    final currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
+    final currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 0);
 
-    // Safely parse the icon code with error handling
     IconData iconData;
     try {
       iconData = IconData(
@@ -34,134 +33,132 @@ class CategoryCard extends StatelessWidget {
 
     return Hero(
       tag: 'category_${category.id}',
-      child: Card(
-        elevation: 2,
-        shadowColor: category.color.withOpacity(0.3),
-        shape: RoundedRectangleBorder(
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          side: BorderSide(
-            color: category.color.withOpacity(0.1),
-            width: 1,
-          ),
+          boxShadow: [
+            BoxShadow(
+              color: category.color.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: InkWell(
-          onTap: onEdit,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: category.color.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        iconData,
-                        color: category.color,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            category.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          if (category.budget > 0) ...[
-                            const SizedBox(height: 4),
-                            Text(
-                              '${currencyFormat.format(category.spent)} of ${currencyFormat.format(category.budget)}',
-                              style: TextStyle(
-                                fontSize: 14,
-                                color: isOverBudget ? Colors.red : Colors.grey[600],
-                                fontWeight: isOverBudget ? FontWeight.bold : FontWeight.normal,
-                              ),
-                            ),
-                          ],
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline),
-                      color: Colors.red[300],
-                      onPressed: onDelete,
-                      tooltip: 'Delete Category',
-                    ),
-                  ],
-                ),
-                if (category.budget > 0) ...[
-                  const SizedBox(height: 16),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onEdit,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.all(10),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${(progress * 100).toStringAsFixed(1)}% spent',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: isOverBudget ? Colors.red : Colors.grey[600],
-                            ),
-                          ),
-                          Text(
-                            isOverBudget
-                                ? 'Over budget by ${currencyFormat.format(category.spent - category.budget)}'
-                                : 'Remaining: ${currencyFormat.format(category.budget - category.spent)}',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: isOverBudget ? Colors.red : Colors.green,
-                            ),
-                          ),
-                        ],
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: category.color.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          iconData,
+                          color: category.color,
+                          size: 22,
+                        ),
                       ),
-                      const SizedBox(height: 8),
-                      Stack(
-                        children: [
-                          Container(
-                            height: 8,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(4),
-                            ),
+                      SizedBox(
+                        height: 32,
+                        width: 32,
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.delete_outline,
+                            size: 20,
+                            color: Colors.red[300],
                           ),
-                          AnimatedFractionallySizedBox(
-                            duration: const Duration(milliseconds: 300),
-                            widthFactor: progress,
-                            child: Container(
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: isOverBudget ? Colors.red : category.color,
-                                borderRadius: BorderRadius.circular(4),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: (isOverBudget ? Colors.red : category.color).withOpacity(0.2),
-                                    blurRadius: 4,
-                                    offset: const Offset(0, 2),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ],
+                          onPressed: onDelete,
+                          tooltip: 'Delete Category',
+                        ),
                       ),
                     ],
                   ),
+                  const SizedBox(height: 8),
+                  Text(
+                    category.name,
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (category.budget > 0) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      currencyFormat.format(category.spent),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: isOverBudget ? Colors.red : Colors.grey[800],
+                      ),
+                      maxLines: 1,
+                    ),
+                    const SizedBox(height: 4),
+                    Stack(
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: Colors.grey[200],
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: progress,
+                          child: Container(
+                            height: 3,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: isOverBudget
+                                    ? [Colors.red[400]!, Colors.red[600]!]
+                                    : [category.color.withOpacity(0.7), category.color],
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                              ),
+                              borderRadius: BorderRadius.circular(2),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          '${(progress * 100).toStringAsFixed(0)}%',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: isOverBudget ? Colors.red : Colors.grey[600],
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (isOverBudget)
+                          const Icon(
+                            Icons.warning,
+                            size: 12,
+                            color: Colors.red,
+                          ),
+                      ],
+                    ),
+                  ],
                 ],
-              ],
+              ),
             ),
           ),
         ),
