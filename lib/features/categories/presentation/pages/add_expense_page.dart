@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:metrowealth/features/transactions/data/repositories/transaction_repository.dart';
+import 'package:metrowealth/features/payments/presentation/widgets/payment_sheet.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
@@ -29,6 +30,11 @@ class _AddExpensePageState extends State<AddExpensePage> {
   List<String> _selectedTags = [];
   bool _isLoading = false;
   late final TransactionRepository _transactionRepository;
+
+  final _currencyFormat = NumberFormat.currency(
+    symbol: 'KSH ',
+    decimalDigits: 2,
+  );
 
   @override
   void initState() {
@@ -64,37 +70,64 @@ class _AddExpensePageState extends State<AddExpensePage> {
 
     try {
       final userId = FirebaseAuth.instance.currentUser!.uid;
-      final transaction = TransactionModel(
-        id: const Uuid().v4(),
-        userId: userId,
-        categoryId: widget.category.id,
-        amount: double.parse(_amountController.text),
-        description: _messageController.text.isNotEmpty ? _messageController.text : '',
-        title: _titleController.text,
-        date: _selectedDate,
-        type: TransactionType.expense,
-        frequency: _selectedFrequency,
-        tags: _selectedTags,
-        notes: _messageController.text.isNotEmpty ? _messageController.text : null,
-      );
-
-      await _transactionRepository.addTransaction(transaction);
-
+      final amount = double.parse(_amountController.text);
+      
+      // Show payment sheet
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Transaction added successfully'),
-            backgroundColor: Colors.green,
-          ),
+        final result = await PaymentSheet.show(
+          context: context,
+          amount: amount,
+          title: _titleController.text,
+          onPaymentComplete: () async {
+            // Create and save the transaction after successful payment
+            final transaction = TransactionModel(
+              id: const Uuid().v4(),
+              userId: userId,
+              categoryId: widget.category.id,
+              amount: amount,
+              description: _messageController.text.isNotEmpty ? _messageController.text : '',
+              title: _titleController.text,
+              date: _selectedDate,
+              type: TransactionType.expense,
+              frequency: _selectedFrequency,
+              tags: _selectedTags,
+              notes: _messageController.text.isNotEmpty ? _messageController.text : null,
+            );
+
+            await _transactionRepository.addTransaction(transaction);
+          },
         );
-        Navigator.pop(context);
+
+        if (result == true && mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.check_circle, color: Colors.white),
+                  SizedBox(width: 8),
+                  Text('Transaction completed successfully'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+          Navigator.pop(context);
+        }
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error adding transaction: $e'),
+            content: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.white),
+                const SizedBox(width: 8),
+                Expanded(child: Text('Error processing transaction: $e')),
+              ],
+            ),
             backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
         );
       }
@@ -252,26 +285,28 @@ class _AddExpensePageState extends State<AddExpensePage> {
         TextFormField(
           controller: _amountController,
           keyboardType: TextInputType.number,
-          style: const TextStyle(fontSize: 16),
           decoration: InputDecoration(
-            hintText: '\$0.00',
+            hintText: '0.00',
+            prefixText: 'KSH ',
+            prefixStyle: const TextStyle(
+              color: Colors.black,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
             filled: true,
             fillColor: Colors.grey[100],
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide.none,
             ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 12,
-            ),
           ),
           validator: (value) {
             if (value == null || value.isEmpty) {
               return 'Please enter an amount';
             }
-            if (double.tryParse(value) == null) {
-              return 'Please enter a valid number';
+            final amount = double.tryParse(value);
+            if (amount == null || amount <= 0) {
+              return 'Please enter a valid amount';
             }
             return null;
           },
@@ -440,8 +475,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
       child: ElevatedButton(
         onPressed: _isLoading ? null : _saveTransaction,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFB71C1C),
-          foregroundColor: Colors.white,
+          backgroundColor: AppColors.primary,
           padding: const EdgeInsets.symmetric(vertical: 16),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -456,12 +490,19 @@ class _AddExpensePageState extends State<AddExpensePage> {
                   valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                 ),
               )
-            : const Text(
-                'Save',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.payment, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Pay ${_amountController.text.isNotEmpty ? _currencyFormat.format(double.tryParse(_amountController.text) ?? 0) : "KSH 0.00"}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
       ),
     );
