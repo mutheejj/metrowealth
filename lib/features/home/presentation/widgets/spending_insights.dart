@@ -20,7 +20,10 @@ class _SpendingInsightsState extends State<SpendingInsights> {
   final DatabaseService _db = DatabaseService();
   bool _isLoading = true;
   Map<String, double> _categorySpending = {};
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(
+    symbol: 'KSH ',
+    decimalDigits: 2,
+  );
 
   @override
   void initState() {
@@ -56,32 +59,47 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       return const Center(child: CircularProgressIndicator());
     }
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Spending Insights',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
-        ),
-        const SizedBox(height: 16),
-        SizedBox(
-          height: 200,
-          child: PieChart(
-            PieChartData(
-              sections: _buildPieChartSections(),
-              sectionsSpace: 2,
-              centerSpaceRadius: 40,
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Spending Insights',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
             ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Column(
-          children: _buildLegendItems(),
-        ),
-      ],
+          const SizedBox(height: 24),
+          AspectRatio(
+            aspectRatio: 1.3,
+            child: PieChart(
+              PieChartData(
+                sections: _buildPieChartSections(),
+                sectionsSpace: 2,
+                centerSpaceRadius: 40,
+                startDegreeOffset: -90,
+              ),
+            ),
+          ),
+          const SizedBox(height: 32),
+          Column(
+            children: _buildLegendItems(),
+          ),
+        ],
+      ),
     );
   }
 
@@ -93,6 +111,9 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       Colors.green,
       Colors.orange,
       Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
     ];
 
     return _categorySpending.entries.map((entry) {
@@ -107,39 +128,56 @@ class _SpendingInsightsState extends State<SpendingInsights> {
         titleStyle: const TextStyle(
           color: Colors.white,
           fontSize: 12,
+          fontWeight: FontWeight.bold,
         ),
+        titlePositionPercentageOffset: 0.6,
       );
     }).toList();
   }
 
   List<Widget> _buildLegendItems() {
+    final colors = [
+      AppColors.primary,
+      Colors.blue,
+      Colors.green,
+      Colors.orange,
+      Colors.purple,
+      Colors.teal,
+      Colors.pink,
+      Colors.amber,
+    ];
+
     return _categorySpending.entries.map((entry) {
+      final index = _categorySpending.keys.toList().indexOf(entry.key);
+      
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
+        padding: const EdgeInsets.symmetric(vertical: 8),
         child: Row(
           children: [
             Container(
               width: 12,
               height: 12,
               decoration: BoxDecoration(
-                color: AppColors.primary,
+                color: colors[index % colors.length],
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            const SizedBox(width: 8),
-            Text(
-              entry.key,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                entry.key,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
-            const Spacer(),
+            const SizedBox(width: 16),
             Text(
               _currencyFormat.format(entry.value),
               style: const TextStyle(
                 fontSize: 14,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

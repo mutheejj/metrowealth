@@ -4,6 +4,7 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 import 'package:metrowealth/features/categories/presentation/widgets/add_category_sheet.dart';
+import 'package:metrowealth/features/categories/presentation/widgets/add_income_category_sheet.dart';
 import 'package:metrowealth/features/categories/presentation/widgets/category_card.dart';
 import 'package:metrowealth/features/categories/presentation/pages/category_detail_page.dart';
 import 'package:metrowealth/core/widgets/bottom_nav_bar.dart';
@@ -72,12 +73,14 @@ class _CategoriesPageState extends State<CategoriesPage> with SingleTickerProvid
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => AddCategorySheet(
-        type: _tabController.index == 0 
-            ? CategoryType.expense 
-            : CategoryType.income,
-        onAdd: _addCategory,
-      ),
+      builder: (context) => _tabController.index == 0 
+          ? AddCategorySheet(
+              type: CategoryType.expense,
+              onAdd: _addCategory,
+            )
+          : AddIncomeCategorySheet(
+              onAdd: _addCategory,
+            ),
     );
   }
 

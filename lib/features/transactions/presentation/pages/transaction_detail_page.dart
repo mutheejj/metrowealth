@@ -29,7 +29,7 @@ class TransactionDetailPage extends StatefulWidget {
 }
 
 class _TransactionDetailPageState extends State<TransactionDetailPage> {
-  final currencyFormat = NumberFormat.currency(symbol: '\$');
+  final currencyFormat = NumberFormat.currency(symbol: 'KSH ');
 
   @override
   Widget build(BuildContext context) {

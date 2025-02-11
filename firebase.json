@@ -1,1 +1,29 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"metrowealth-da044","appId":"1:753754964831:android:4286aa5d7beea1affeacea","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"metrowealth-da044","configurations":{"android":"1:753754964831:android:4286aa5d7beea1affeacea","ios":"1:753754964831:ios:c0324e11f4f84b03feacea","macos":"1:753754964831:ios:c0324e11f4f84b03feacea","web":"1:753754964831:web:cd04188d107597d2feacea","windows":"1:753754964831:web:1ad4b169d4120a83feacea"}}}}}}
+{
+  "firestore": {
+    "rules": "firestore.rules",
+    "indexes": "firestore.indexes.json"
+  },
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "metrowealth-da044",
+          "appId": "1:753754964831:android:4286aa5d7beea1affeacea",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "metrowealth-da044",
+          "configurations": {
+            "android": "1:753754964831:android:4286aa5d7beea1affeacea",
+            "ios": "1:753754964831:ios:c0324e11f4f84b03feacea",
+            "macos": "1:753754964831:ios:c0324e11f4f84b03feacea",
+            "web": "1:753754964831:web:cd04188d107597d2feacea",
+            "windows": "1:753754964831:web:1ad4b169d4120a83feacea"
+          }
+        }
+      }
+    }
+  }
+}

@@ -15,7 +15,7 @@ class TransactionsPage extends StatefulWidget {
 }
 
 class _TransactionsPageState extends State<TransactionsPage> {
-  final currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
   int _selectedIndex = 2; // For bottom navigation
   int _selectedTab = 0; // 0: All, 1: Income, 2: Expense
   
@@ -78,7 +78,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
               ),
               const SizedBox(height: 8),
               Text(
-                currencyFormat.format(7783.00),
+                _currencyFormat.format(7783.00),
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 24,
@@ -298,7 +298,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
           ),
           const SizedBox(height: 8),
           Text(
-            currencyFormat.format(amount),
+            _currencyFormat.format(amount),
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
@@ -381,7 +381,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '${isIncome ? '+' : ''}${currencyFormat.format(amount)}',
+                '${isIncome ? '+' : ''}${_currencyFormat.format(amount)}',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: isIncome ? Colors.green : Colors.red,

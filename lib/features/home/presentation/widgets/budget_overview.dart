@@ -20,7 +20,7 @@ class _BudgetOverviewState extends State<BudgetOverview> {
   Map<String, double> _categorySpending = {};
   bool _isLoading = true;
   String _error = '';
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
 
   @override
   void initState() {
@@ -123,17 +123,27 @@ class _BudgetOverviewState extends State<BudgetOverview> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                category,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w500,
+              Expanded(
+                flex: 2,
+                child: Text(
+                  category,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
-              Text(
-                '${_currencyFormat.format(spent)} / ${_currencyFormat.format(budget)}',
-                style: TextStyle(
-                  color: isOverBudget ? Colors.red : Colors.black87,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(width: 8),
+              Expanded(
+                flex: 3,
+                child: Text(
+                  '${_currencyFormat.format(spent)} / ${_currencyFormat.format(budget)}',
+                  style: TextStyle(
+                    color: isOverBudget ? Colors.red : Colors.black87,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  textAlign: TextAlign.end,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],

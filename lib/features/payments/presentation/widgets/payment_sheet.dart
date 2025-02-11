@@ -61,10 +61,7 @@ class _PaymentSheetState extends State<PaymentSheet> {
   final _accountNameController = TextEditingController();
   bool _isProcessing = false;
 
-  final _currencyFormat = NumberFormat.currency(
-    symbol: 'KSH ',
-    decimalDigits: 2,
-  );
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
 
   @override
   void dispose() {

@@ -18,7 +18,7 @@ class SavingsGoalsProgress extends StatefulWidget {
 
 class _SavingsGoalsProgressState extends State<SavingsGoalsProgress> {
   final DatabaseService _db = DatabaseService();
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
   bool _isLoading = true;
   List<SavingsGoalModel> _goals = [];
 

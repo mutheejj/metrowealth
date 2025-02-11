@@ -13,7 +13,7 @@ class AccountBalanceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final formatter = NumberFormat.currency(symbol: '\$');
+    final formatter = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
     
     return Container(
       padding: const EdgeInsets.all(20),

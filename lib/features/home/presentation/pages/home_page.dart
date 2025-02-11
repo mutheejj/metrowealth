@@ -38,7 +38,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   final DatabaseService _db = DatabaseService();
   final _currencyFormat = NumberFormat.currency(
-    symbol: 'KES ',
+    symbol: 'KSH ',
     decimalDigits: 2,
   );
   UserModel? _user;
@@ -46,6 +46,8 @@ class _HomePageState extends State<HomePage> {
   int _currentIndex = 0;
   AnalysisPeriod _selectedPeriod = AnalysisPeriod.monthly;
   late final CategoryRepository _categoryRepository;
+  late DateTime _startDate;
+  late DateTime _endDate;
 
   @override
   void initState() {
@@ -504,7 +506,7 @@ class _HomePageState extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                isIncome ? '+\$${amount.toStringAsFixed(2)}' : '-\$${amount.toStringAsFixed(2)}',
+                isIncome ? '+KSH ${amount.toStringAsFixed(2)}' : '-KSH ${amount.toStringAsFixed(2)}',
                 style: TextStyle(
                   color: isIncome ? Colors.green : Colors.red,
                   fontWeight: FontWeight.w600,

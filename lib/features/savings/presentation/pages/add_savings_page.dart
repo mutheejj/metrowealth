@@ -156,7 +156,7 @@ class _AddSavingsPageState extends State<AddSavingsPage> {
                                 borderRadius: BorderRadius.circular(12),
                                 borderSide: BorderSide.none,
                               ),
-                              prefixText: '\$ ',
+                              prefixText: 'KSH ',
                               hintText: '0.00',
                             ),
                             validator: (value) {

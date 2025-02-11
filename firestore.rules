@@ -37,6 +37,15 @@ service cloud.firestore {
              isValidDate(data.date);
     }
 
+    function isValidSavingsGoal(data) {
+      return data.keys().hasAll(['name', 'targetAmount', 'currentAmount', 'userId']) &&
+             data.name is string &&
+             data.name.size() > 0 &&
+             isValidAmount(data.targetAmount) &&
+             isValidAmount(data.currentAmount) &&
+             isOwner(data.userId);
+    }
+
     // Users collection
     match /users/{userId} {
       allow read: if isSignedIn() && isOwner(userId);
@@ -67,7 +76,9 @@ service cloud.firestore {
       // Savings goals subcollection
       match /savingsGoals/{goalId} {
         allow read: if isSignedIn() && isOwner(userId);
-        allow write: if isSignedIn() && isOwner(userId);
+        allow create: if isSignedIn() && isOwner(userId) && isValidSavingsGoal(request.resource.data);
+        allow update: if isSignedIn() && isOwner(userId) && isValidSavingsGoal(request.resource.data);
+        allow delete: if isSignedIn() && isOwner(userId);
       }
 
       // Allow access to all other subcollections
@@ -95,6 +106,14 @@ service cloud.firestore {
     match /bills/{billId} {
       allow read: if isSignedIn() && isOwner(resource.data.userId);
       allow write: if isSignedIn() && isOwner(request.resource.data.userId);
+    }
+
+    // Root level savingsGoals collection
+    match /savingsGoals/{goalId} {
+      allow read: if isSignedIn() && isOwner(resource.data.userId);
+      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidSavingsGoal(request.resource.data);
+      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidSavingsGoal(request.resource.data);
+      allow delete: if isSignedIn() && isOwner(resource.data.userId);
     }
   }
 } 

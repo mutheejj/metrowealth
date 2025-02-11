@@ -292,12 +292,42 @@ class DatabaseService {
     return _db
         .collection('transactions')
         .where('userId', isEqualTo: userId)
-        .where('date', isGreaterThanOrEqualTo: startDate)
-        .where('date', isLessThanOrEqualTo: endDate)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+        .orderBy('date', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => TransactionModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+      return snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return TransactionModel.fromMap({
+          ...data,
+          'id': doc.id,
+        });
+      }).toList();
+    });
+  }
+
+  // Helper method to get transactions as Future
+  Future<List<TransactionModel>> getTransactionsByDateRangeAsFuture(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    final snapshot = await _db
+        .collection('transactions')
+        .where('userId', isEqualTo: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+        .orderBy('date', descending: true)
+        .get();
+
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return TransactionModel.fromMap({
+        ...data,
+        'id': doc.id,
+      });
+    }).toList();
   }
 
   Future<void> updateUserProfile(UserModel user) async {
@@ -718,12 +748,12 @@ class DatabaseService {
       final startDate = DateTime(month.year, month.month, 1);
       final endDate = DateTime(month.year, month.month + 1, 0);
 
-      // Wait for the stream to emit first value
-      final transactions = await getTransactionsByDateRange(
+      // Get transactions using the Future version
+      final transactions = await getTransactionsByDateRangeAsFuture(
         userId,
         startDate,
         endDate,
-      ).first;  // Add .first to get the first value from the stream
+      );
 
       // Calculate statistics
       double totalIncome = 0;
@@ -974,6 +1004,64 @@ class DatabaseService {
       });
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<Map<String, double>> getSpendingByCategory(String userId, DateTime startDate, DateTime endDate) async {
+    final spending = <String, double>{};
+    
+    try {
+      final snapshot = await _db
+          .collection('transactions')
+          .where('userId', isEqualTo: userId)
+          .where('type', isEqualTo: 'expense')
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+          .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
+          .get();
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data() as Map<String, dynamic>;
+        final categoryId = data['categoryId'] as String;
+        final amount = (data['amount'] as num).toDouble();
+        
+        // Get category name
+        final categoryDoc = await _db
+            .collection('users')
+            .doc(userId)
+            .collection('categories')
+            .doc(categoryId)
+            .get();
+            
+        if (categoryDoc.exists) {
+          final categoryData = categoryDoc.data() as Map<String, dynamic>;
+          final categoryName = categoryData['name'] as String;
+          spending[categoryName] = (spending[categoryName] ?? 0) + amount;
+        }
+      }
+      
+      return spending;
+    } catch (e) {
+      print('Error getting spending by category: $e');
+      return {};
+    }
+  }
+
+  Future<double> getTotalBudget(String userId) async {
+    try {
+      final snapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .where('type', isEqualTo: 'expense')
+          .get();
+
+      return snapshot.docs.fold<double>(
+        0.0,
+        (sum, doc) => sum + ((doc.data() as Map<String, dynamic>)['budget'] ?? 0.0),
+      );
+    } catch (e) {
+      print('Error getting total budget: $e');
+      return 0.0;
     }
   }
 } 

@@ -19,7 +19,7 @@ class CategoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = category.budget > 0 ? (category.spent / category.budget).clamp(0.0, 1.0) : 0.0;
     final isOverBudget = category.spent > category.budget && category.budget > 0;
-    final currencyFormat = NumberFormat.currency(symbol: '\$');
+    final currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
 
     // Safely parse the icon code with error handling
     IconData iconData;
