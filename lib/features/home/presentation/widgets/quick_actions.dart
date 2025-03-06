@@ -1,39 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
-import 'package:metrowealth/features/bills/presentation/widgets/bills_action_sheet.dart';
 import 'package:metrowealth/features/payments/presentation/widgets/send_money_sheet.dart';
 import 'package:metrowealth/features/payments/presentation/widgets/request_money_sheet.dart';
 import 'package:metrowealth/features/payments/presentation/widgets/deposit_sheet.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
-import 'package:metrowealth/core/services/database_service.dart';
+import 'package:metrowealth/features/loans/presentation/pages/loans_page.dart';
 
 class QuickActions extends StatelessWidget {
   final Function(String) onActionSelected;
 
   const QuickActions({super.key, required this.onActionSelected});
-
-  static const _quickActions = [
-    {
-      'id': 'send',
-      'name': 'Send',
-      'icon': Icons.send,
-    },
-    {
-      'id': 'savings',
-      'name': 'Savings',
-      'icon': Icons.savings,
-    },
-    {
-      'id': 'deposit',
-      'name': 'Deposit',
-      'icon': Icons.account_balance_wallet,
-    },
-    {
-      'id': 'bills',
-      'name': 'Bills',
-      'icon': Icons.receipt_long,
-    },
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -70,9 +46,9 @@ class QuickActions extends StatelessWidget {
             ),
             _buildActionItem(
               context,
-              icon: Icons.receipt_long,
-              label: 'Bills',
-              onTap: () => _showBillsActionSheet(context),
+              icon: Icons.account_balance,
+              label: 'Loans',
+              onTap: () => _navigateToLoans(context),
             ),
           ],
         ),
@@ -95,19 +71,18 @@ class QuickActions extends StatelessWidget {
     );
   }
 
+  void _navigateToLoans(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LoansPage()),
+    );
+  }
+
   void _showDepositSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       builder: (context) => const DepositSheet(),
-    );
-  }
-
-  void _showBillsActionSheet(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (context) => BillsActionSheet(userId: DatabaseService().currentUserId!),
     );
   }
 
@@ -144,4 +119,4 @@ class QuickActions extends StatelessWidget {
       ),
     );
   }
-} 
+}

@@ -3,7 +3,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/core/services/firebase_service.dart';
 import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_container.dart';
-import 'package:metrowealth/features/bills/presentation/pages/bills_page.dart';
 import 'package:metrowealth/features/budget/presentation/pages/budget_page.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';

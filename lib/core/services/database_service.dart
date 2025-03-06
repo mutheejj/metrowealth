@@ -9,7 +9,7 @@ import 'package:metrowealth/features/banking/data/models/bank_account_model.dart
 import 'package:metrowealth/features/loans/data/models/loan_model.dart';
 import 'package:metrowealth/features/savings/data/models/savings_account_model.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
-import 'package:metrowealth/features/bills/data/models/bill_model.dart';
+
 
 class DatabaseService {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -606,139 +606,7 @@ class DatabaseService {
             .map((doc) => SavingsGoalModel.fromFirestore(doc))
             .toList());
   }
-
-  // Bills Methods
-  Future<void> createBill(BillModel bill) async {
-    try {
-      await _db.collection('bills').doc(bill.id).set(bill.toMap());
-    } catch (e) {
-      debugPrint('Error creating bill: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> updateBill(BillModel bill) async {
-    try {
-      await _db.collection('bills').doc(bill.id).update(bill.toMap());
-    } catch (e) {
-      debugPrint('Error updating bill: $e');
-      rethrow;
-    }
-  }
-
-  Future<void> deleteBill(String billId) async {
-    try {
-      // Delete the bill document
-      await _db.collection('bills').doc(billId).delete();
-
-      // Delete any associated payments or references
-      final paymentsQuery = _db.collection('transactions')
-          .where('billId', isEqualTo: billId);
-      
-      final paymentsSnapshot = await paymentsQuery.get();
-      
-      final batch = _db.batch();
-      for (var doc in paymentsSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      
-      await batch.commit();
-    } catch (e) {
-      debugPrint('Error deleting bill: $e');
-      rethrow;
-    }
-  }
-
-  Stream<List<BillModel>> getUpcomingBills(String userId) {
-    final now = DateTime.now();
-    return _db
-        .collection('bills')
-        .where('userId', isEqualTo: userId)
-        .where('status', isEqualTo: BillStatus.pending.toString())
-        .where('dueDate', isGreaterThanOrEqualTo: now)
-        .orderBy('dueDate')
-        .orderBy('__name__')
-        .limit(5)
-        .snapshots()
-        .handleError((error) {
-          debugPrint('Error getting upcoming bills: $error');
-          return Stream.value([]);
-        })
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => BillModel.fromFirestore(doc)).toList());
-  }
-
-  Stream<List<BillModel>> getUserBills(String userId) {
-    return _db
-        .collection('bills')
-        .where('userId', isEqualTo: userId)
-        .orderBy('dueDate', descending: true)
-        .snapshots()
-        .handleError((error) {
-          debugPrint('Error getting user bills: $error');
-          return Stream.value([]);  // Return empty list on error
-        })
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => BillModel.fromFirestore(doc)).toList());
-  }
-
-  Future<void> payBill(BillModel bill, BillPaymentModel payment) async {
-    try {
-      final batch = _db.batch();
-
-      // Update bill status and payments
-      final billRef = _db.collection('bills').doc(bill.id);
-      final updatedBill = bill.copyWith(
-        status: BillStatus.paid,
-        payments: [...bill.payments, payment],
-      );
-      batch.update(billRef, updatedBill.toMap());
-
-      // Create transaction record
-      final transactionRef = _db.collection('transactions').doc(payment.id);
-      final transaction = TransactionModel(
-        id: payment.id,
-        userId: bill.userId,
-        categoryId: bill.categoryId,
-        amount: payment.amount,
-        title: 'Payment for ${bill.title}',
-        type: TransactionType.billPayment,
-        date: payment.paymentDate,
-        description: 'Payment for ${bill.title}',
-        attachmentUrl: payment.receipt,
-        billId: bill.id,
-        metadata: {
-          'billTitle': bill.title,
-          'billDueDate': bill.dueDate,
-        },
-        tags: ['bill_payment', bill.categoryId],
-      );
-      batch.set(transactionRef, transaction.toMap());
-
-      await batch.commit();
-    } catch (e) {
-      debugPrint('Error paying bill: $e');
-      rethrow;
-    }
-  }
-
-  // Get bills due soon for notifications
-  Stream<List<BillModel>> getBillsDueSoon(String userId, {int daysThreshold = 3}) {
-    final now = DateTime.now();
-    final threshold = now.add(Duration(days: daysThreshold));
-    
-    return _db
-        .collection('bills')
-        .where('userId', isEqualTo: userId)
-        .where('status', isEqualTo: BillStatus.pending.toString())
-        .where('dueDate', isGreaterThanOrEqualTo: now)
-        .where('dueDate', isLessThanOrEqualTo: threshold)
-        .orderBy('dueDate')
-        .snapshots()
-        .map((snapshot) =>
-            snapshot.docs.map((doc) => BillModel.fromFirestore(doc)).toList());
-  }
-
+  
   // Statistics Methods
   Future<Map<String, dynamic>> getMonthlyStatistics(
     String userId,
@@ -747,19 +615,19 @@ class DatabaseService {
     try {
       final startDate = DateTime(month.year, month.month, 1);
       final endDate = DateTime(month.year, month.month + 1, 0);
-
+  
       // Get transactions using the Future version
       final transactions = await getTransactionsByDateRangeAsFuture(
         userId,
         startDate,
         endDate,
       );
-
+  
       // Calculate statistics
       double totalIncome = 0;
       double totalExpenses = 0;
       Map<String, double> categoryTotals = {};
-
+  
       for (var transaction in transactions) {
         if (transaction.type == TransactionType.income) {
           totalIncome += transaction.amount;
@@ -769,7 +637,7 @@ class DatabaseService {
               (categoryTotals[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
-
+  
       return {
         'totalIncome': totalIncome,
         'totalExpenses': totalExpenses,
@@ -781,41 +649,41 @@ class DatabaseService {
       rethrow;
     }
   }
-
+  
   // User Methods
   Future<UserModel?> getCurrentUser() async {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) return null;
-
+  
       final doc = await _db.collection('users').doc(uid).get();
       if (!doc.exists) return null;
-
+  
       return UserModel.fromFirestore(doc);
     } catch (e) {
       debugPrint('Error getting current user: $e');
       rethrow;
     }
   }
-
+  
   // Financial Overview Methods
   Future<Map<String, dynamic>> getFinancialOverview(String userId) async {
     try {
       final now = DateTime.now();
       final startOfMonth = DateTime(now.year, now.month, 1);
       final endOfMonth = DateTime(now.year, now.month + 1, 0);
-
+  
       final transactionsQuery = await _db
           .collection('transactions')
           .where('userId', isEqualTo: userId)
           .where('date', isGreaterThanOrEqualTo: startOfMonth)
           .where('date', isLessThanOrEqualTo: endOfMonth)
           .get();
-
+  
       double totalIncome = 0;
       double totalExpenses = 0;
       Map<String, double> categorySpending = {};
-
+  
       for (var doc in transactionsQuery.docs) {
         final transaction = TransactionModel.fromFirestore(doc);
         if (transaction.type == TransactionType.income) {
@@ -826,42 +694,28 @@ class DatabaseService {
               (categorySpending[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
-
+  
       // Get savings goals progress
       final savingsQuery = await _db
           .collection('savingsGoals')
           .where('userId', isEqualTo: userId)
           .get();
-
+  
       double totalSavings = 0;
       double savingsTargets = 0;
-
+  
       for (var doc in savingsQuery.docs) {
         final goal = SavingsGoalModel.fromFirestore(doc);
         totalSavings += goal.currentAmount;
         savingsTargets += goal.targetAmount;
       }
-
-      // Get upcoming bills
-      final billsQuery = await _db
-          .collection('bills')
-          .where('userId', isEqualTo: userId)
-          .where('dueDate', isGreaterThan: now)
-          .orderBy('dueDate')
-          .limit(5)
-          .get();
-
-      final upcomingBills = billsQuery.docs
-          .map((doc) => BillModel.fromFirestore(doc))
-          .toList();
-
+  
       return {
         'totalIncome': totalIncome,
         'totalExpenses': totalExpenses,
         'categorySpending': categorySpending,
         'totalSavings': totalSavings,
         'savingsTargets': savingsTargets,
-        'upcomingBills': upcomingBills,
         'netIncome': totalIncome - totalExpenses,
         'savingsRate': totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0,
       };
@@ -883,7 +737,7 @@ class DatabaseService {
           .orderBy('date', descending: true)
           .limit(limit)
           .get();
-
+  
       return query.docs
           .map((doc) => TransactionModel.fromFirestore(doc))
           .toList();
@@ -907,10 +761,10 @@ class DatabaseService {
           .where('date', isLessThanOrEqualTo: endDate)
           .where('type', isEqualTo: TransactionType.expense.toString())
           .get();
-
+  
       Map<String, double> categorySpending = {};
       Map<String, List<TransactionModel>> categoryTransactions = {};
-
+  
       for (var doc in query.docs) {
         final transaction = TransactionModel.fromFirestore(doc);
         categorySpending[transaction.categoryId] = 
@@ -919,7 +773,7 @@ class DatabaseService {
         categoryTransactions[transaction.categoryId] = 
             (categoryTransactions[transaction.categoryId] ?? [])..add(transaction);
       }
-
+  
       return {
         'categorySpending': categorySpending,
         'categoryTransactions': categoryTransactions,
@@ -940,7 +794,7 @@ class DatabaseService {
       final batch = _db.batch();
       final uid = _auth.currentUser?.uid;
       if (uid == null) throw 'User not authenticated';
-
+  
       // Create transaction record
       final transactionRef = _db.collection('transactions').doc();
       batch.set(transactionRef, {
@@ -953,13 +807,13 @@ class DatabaseService {
         'accountId': fromAccount,
         'billId': billId,
       });
-
+  
       // Update account balance
       final accountRef = _db.collection('bankAccounts').doc(fromAccount);
       batch.update(accountRef, {
         'balance': FieldValue.increment(-amount),
       });
-
+  
       // If this is a bill payment, update bill status
       if (billId != null) {
         final billRef = _db.collection('bills').doc(billId);
@@ -968,7 +822,7 @@ class DatabaseService {
           'paidDate': DateTime.now(),
         });
       }
-
+  
       await batch.commit();
     } catch (e) {
       debugPrint('Error processing payment: $e');
@@ -980,12 +834,12 @@ class DatabaseService {
     try {
       final uid = _auth.currentUser?.uid;
       if (uid == null) throw 'User not authenticated';
-
+  
       final snapshot = await _db
           .collection('bankAccounts')
           .where('userId', isEqualTo: uid)
           .get();
-
+  
       return snapshot.docs
           .map((doc) => BankAccountModel.fromFirestore(doc))
           .toList();
@@ -995,17 +849,7 @@ class DatabaseService {
     }
   }
 
-  Future<void> updateBillPayment(String billId, BillModel bill, BillPaymentModel payment) async {
-    try {
-      await _db.collection('bills').doc(billId).update({
-        'status': BillStatus.paid.toString(),
-        'payments': [...bill.payments, payment.toMap()],
-        'updatedAt': DateTime.now(),
-      });
-    } catch (e) {
-      rethrow;
-    }
-  }
+
 
   Future<Map<String, double>> getSpendingByCategory(String userId, DateTime startDate, DateTime endDate) async {
     try {
@@ -1016,7 +860,7 @@ class DatabaseService {
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .get();
-
+  
       final spending = <String, double>{};
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
@@ -1037,7 +881,7 @@ class DatabaseService {
           .collection('categories')
           .where('userId', isEqualTo: userId)
           .get();
-
+  
       return snapshot.docs.fold<double>(
         0.0,
         (sum, doc) {
@@ -1056,14 +900,14 @@ class DatabaseService {
     try {
       final userId = _auth.currentUser?.uid;
       if (userId == null) throw 'User not authenticated';
-
+  
       var query = _db
           .collection('transactions')
           .where('userId', isEqualTo: userId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('date', descending: true);
-
+  
       final snapshot = await query.get();
       return snapshot.docs.map((doc) {
         final data = doc.data() as Map<String, dynamic>;
@@ -1078,4 +922,4 @@ class DatabaseService {
       return [];
     }
   }
-} 
+}
