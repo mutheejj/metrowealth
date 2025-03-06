@@ -160,6 +160,7 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
         final data = {
           'date': date,
           'amount': amount,
+          'title': transaction['title'] as String,
         };
 
         if (type == 'income') {
@@ -277,6 +278,7 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
         ),
       ],
       showingTooltipIndicators: [0, 1],
+      barsSpace: 4,
     );
   }
 
@@ -316,8 +318,11 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
                     getTooltipItem: (group, groupIndex, rod, rodIndex) {
                       if (rod.toY == 0) return null;
                       final amount = rod.toY;
+                      final transactions = rodIndex == 0 ? _incomeData : _expenseData;
+                      final transactionsInPeriod = transactions.where((t) => _isDateInPeriod(t['date'] as DateTime, group.x)).toList();
+                      final titles = transactionsInPeriod.map((t) => t['title'] as String).join('\n');
                       return BarTooltipItem(
-                        NumberFormat.currency(symbol: 'KSH ').format(amount),
+                        '${NumberFormat.currency(symbol: 'KSH ').format(amount)}\n$titles',
                         const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -890,4 +895,4 @@ class _AnalysisPageState extends State<AnalysisPage> with SingleTickerProviderSt
       ),
     );
   }
-} 
+}

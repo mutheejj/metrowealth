@@ -32,21 +32,27 @@ class _BudgetOverviewState extends State<BudgetOverview> {
     try {
       setState(() => _isLoading = true);
       
-      final overview = await _db.getFinancialOverview(widget.userId);
-      final categorySpending = overview['categorySpending'] as Map<dynamic, dynamic>?;
-      
-      if (categorySpending != null) {
-        setState(() {
-          _categorySpending = categorySpending.map((key, value) => 
-            MapEntry(key.toString(), (value as num).toDouble()));
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _categorySpending = {};
-          _isLoading = false;
-        });
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0);
+
+      final transactions = await _db.getTransactions(
+        widget.userId,
+        startOfMonth,
+        endOfMonth,
+      );
+
+      final transactionSpending = <String, double>{};
+      for (var transaction in transactions) {
+        if (transaction.title.isNotEmpty) {
+          transactionSpending[transaction.title] = (transactionSpending[transaction.title] ?? 0) + transaction.amount;
+        }
       }
+
+      setState(() {
+        _categorySpending = transactionSpending;
+        _isLoading = false;
+      });
     } catch (e) {
       setState(() {
         _error = e.toString();
@@ -185,4 +191,4 @@ class _BudgetOverviewState extends State<BudgetOverview> {
       ),
     );
   }
-} 
+}

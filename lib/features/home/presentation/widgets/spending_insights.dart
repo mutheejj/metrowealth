@@ -43,8 +43,21 @@ class _SpendingInsightsState extends State<SpendingInsights> {
         endOfMonth,
       );
 
+      final transactions = await _db.getTransactions(
+        widget.userId,
+        startOfMonth,
+        endOfMonth,
+      );
+
+      final transactionSpending = <String, double>{};
+      for (var transaction in transactions) {
+        if (transaction.title.isNotEmpty) {
+          transactionSpending[transaction.title] = (transactionSpending[transaction.title] ?? 0) + transaction.amount;
+        }
+      }
+
       setState(() {
-        _categorySpending = insights['categorySpending'];
+        _categorySpending = transactionSpending;
         _isLoading = false;
       });
     } catch (e) {
@@ -119,11 +132,14 @@ class _SpendingInsightsState extends State<SpendingInsights> {
     return _categorySpending.entries.map((entry) {
       final index = _categorySpending.keys.toList().indexOf(entry.key);
       final percentage = (entry.value / total) * 100;
+      final displayName = entry.key.length > 10 
+          ? '${entry.key.substring(0, 8)}...' 
+          : entry.key;
 
       return PieChartSectionData(
         color: colors[index % colors.length],
         value: entry.value,
-        title: '${percentage.toStringAsFixed(1)}%',
+        title: '$displayName\n${percentage.toStringAsFixed(1)}%',
         radius: 100,
         titleStyle: const TextStyle(
           color: Colors.white,
@@ -185,4 +201,4 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       );
     }).toList();
   }
-} 
+}

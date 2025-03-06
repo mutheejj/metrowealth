@@ -18,6 +18,31 @@ class DatabaseService {
 
   String? get currentUserId => _auth.currentUser?.uid;
 
+  // Get transactions for a user within a date range
+  Future<List<TransactionModel>> getTransactions(
+    String userId,
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    try {
+      final querySnapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('transactions')
+          .where('date', isGreaterThanOrEqualTo: startDate)
+          .where('date', isLessThanOrEqualTo: endDate)
+          .orderBy('date', descending: true)
+          .get();
+
+      return querySnapshot.docs
+          .map((doc) => TransactionModel.fromMap(doc.data()))
+          .toList();
+    } catch (e) {
+      debugPrint('Error fetching transactions: $e');
+      rethrow;
+    }
+  }
+
   // Create default categories for new users
   Future<void> _createDefaultCategories(String userId) async {
     try {
