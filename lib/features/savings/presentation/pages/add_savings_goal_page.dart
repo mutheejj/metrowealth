@@ -29,7 +29,7 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
   final DatabaseService _db = DatabaseService();
   bool _isLoading = false;
 
-  final currencyFormat = NumberFormat.currency(symbol: '\$');
+  final currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 2);
 
   @override
   void dispose() {
@@ -114,7 +114,7 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
                           keyboardType: TextInputType.number,
                           decoration: InputDecoration(
                             labelText: 'Target Amount',
-                            prefixText: '\$ ',
+                            prefixText: 'KSH ',
                             filled: true,
                             fillColor: const Color(0xFFF0FFF0),
                             border: OutlineInputBorder(
@@ -351,4 +351,4 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
         break;
     }
   }
-} 
+}

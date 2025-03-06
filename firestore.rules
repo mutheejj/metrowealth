@@ -1,119 +1,14 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    // Helper function to check if user is signed in
     function isSignedIn() {
       return request.auth != null;
     }
-    
-    function isOwner(userId) {
-      return request.auth.uid == userId;
-    }
 
-    function isValidAmount(amount) {
-      return amount is number && amount >= 0;
-    }
-
-    function isValidDate(dateField) {
-      return dateField is timestamp;
-    }
-
-    function isValidCategory(data) {
-      return data.keys().hasAll(['name', 'icon', 'color', 'type', 'userId']) &&
-             data.name is string && 
-             data.name.size() > 0 &&
-             data.icon is string &&
-             data.userId is string &&
-             data.type in ['expense', 'income', 'savings', 'investment', 'debt', 'budget'] &&
-             isOwner(data.userId);
-    }
-
-    function isValidTransaction(data) {
-      return data.keys().hasAll(['amount', 'categoryId', 'date', 'userId', 'type']) &&
-             isValidAmount(data.amount) &&
-             data.categoryId is string &&
-             data.userId is string &&
-             isOwner(data.userId) &&
-             isValidDate(data.date);
-    }
-
-    function isValidSavingsGoal(data) {
-      return data.keys().hasAll(['name', 'targetAmount', 'currentAmount', 'userId']) &&
-             data.name is string &&
-             data.name.size() > 0 &&
-             isValidAmount(data.targetAmount) &&
-             isValidAmount(data.currentAmount) &&
-             isOwner(data.userId);
-    }
-
-    // Users collection
-    match /users/{userId} {
-      allow read: if isSignedIn() && isOwner(userId);
-      allow write: if isSignedIn() && isOwner(userId);
-      
-      // Categories subcollection
-      match /categories/{categoryId} {
-        allow read: if isSignedIn() && isOwner(userId);
-        allow create: if isSignedIn() && isOwner(userId);
-        allow update: if isSignedIn() && isOwner(userId);
-        allow delete: if isSignedIn() && isOwner(userId);
-      }
-
-      // Transactions subcollection
-      match /transactions/{transactionId} {
-        allow read: if isSignedIn() && isOwner(userId);
-        allow create: if isSignedIn() && isOwner(userId);
-        allow update: if isSignedIn() && isOwner(userId);
-        allow delete: if isSignedIn() && isOwner(userId);
-      }
-
-      // Bills subcollection
-      match /bills/{billId} {
-        allow read: if isSignedIn() && isOwner(userId);
-        allow write: if isSignedIn() && isOwner(userId);
-      }
-
-      // Savings goals subcollection
-      match /savingsGoals/{goalId} {
-        allow read: if isSignedIn() && isOwner(userId);
-        allow create: if isSignedIn() && isOwner(userId) && isValidSavingsGoal(request.resource.data);
-        allow update: if isSignedIn() && isOwner(userId) && isValidSavingsGoal(request.resource.data);
-        allow delete: if isSignedIn() && isOwner(userId);
-      }
-
-      // Allow access to all other subcollections
-      match /{subcollection}/{docId} {
-        allow read: if isSignedIn() && isOwner(userId);
-        allow write: if isSignedIn() && isOwner(userId);
-      }
-    }
-
-    // Root level collections
-    match /transactions/{transactionId} {
-      allow read: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidTransaction(request.resource.data);
-      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidTransaction(request.resource.data);
-      allow delete: if isSignedIn() && isOwner(resource.data.userId);
-    }
-
-    match /categories/{categoryId} {
-      allow read: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidCategory(request.resource.data);
-      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidCategory(request.resource.data);
-      allow delete: if isSignedIn() && isOwner(resource.data.userId);
-    }
-
-    match /bills/{billId} {
-      allow read: if isSignedIn() && isOwner(resource.data.userId);
-      allow write: if isSignedIn() && isOwner(request.resource.data.userId);
-    }
-
-    // Root level savingsGoals collection
-    match /savingsGoals/{goalId} {
-      allow read: if isSignedIn() && isOwner(resource.data.userId);
-      allow create: if isSignedIn() && isOwner(request.resource.data.userId) && isValidSavingsGoal(request.resource.data);
-      allow update: if isSignedIn() && isOwner(resource.data.userId) && isValidSavingsGoal(request.resource.data);
-      allow delete: if isSignedIn() && isOwner(resource.data.userId);
+    // Match all documents in all collections and subcollections
+    match /{document=**} {
+      allow read, write: if isSignedIn();
     }
   }
 } 

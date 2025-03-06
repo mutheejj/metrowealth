@@ -70,7 +70,7 @@ class NotificationPage extends StatelessWidget {
                   color: Colors.blue,
                   title: 'Transactions',
                   message: 'A new transaction has been registered',
-                  subtitle: 'Groceries | Pantry | -\$100.00',
+                  subtitle: 'Groceries | Pantry | -KSH 100.00',
                   time: '17:00 - April 24',
                   showSubtitle: true,
                 ),
@@ -98,7 +98,7 @@ class NotificationPage extends StatelessWidget {
                   color: Colors.blue,
                   title: 'Transactions',
                   message: 'A new transaction has been registered',
-                  subtitle: 'Food | Dinner | -\$74.65',
+                  subtitle: 'Food | Dinner | -KSH 74.65',
                   time: '17:00 - April 24',
                   showSubtitle: true,
                 ),
@@ -206,4 +206,4 @@ class NotificationPage extends StatelessWidget {
       ),
     );
   }
-} 
+}

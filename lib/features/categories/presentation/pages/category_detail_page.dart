@@ -33,7 +33,7 @@ class CategoryDetailPage extends StatefulWidget {
 class _CategoryDetailPageState extends State<CategoryDetailPage> {
   late final CategoryRepository _categoryRepository;
   late final TransactionRepository _transactionRepository;
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ');
   bool _isLoading = false;
   List<TransactionModel> _transactions = [];
   Map<String, double> _weeklySpending = {};
@@ -406,4 +406,4 @@ class _CategoryDetailPageState extends State<CategoryDetailPage> {
       },
     );
   }
-} 
+}

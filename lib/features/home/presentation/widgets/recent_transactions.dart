@@ -20,7 +20,7 @@ class RecentTransactions extends StatefulWidget {
 
 class _RecentTransactionsState extends State<RecentTransactions> {
   final DatabaseService _db = DatabaseService();
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ');
   final _dateFormat = DateFormat('MMM dd');
   bool _isLoading = true;
   List<TransactionModel> _transactions = [];
@@ -181,4 +181,4 @@ class _RecentTransactionsState extends State<RecentTransactions> {
       ),
     );
   }
-} 
+}

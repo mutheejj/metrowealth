@@ -24,7 +24,7 @@ class PaymentPage extends StatefulWidget {
 
 class _PaymentPageState extends State<PaymentPage> {
   final DatabaseService _db = DatabaseService();
-  final _currencyFormat = NumberFormat.currency(symbol: '\$');
+  final _currencyFormat = NumberFormat.currency(symbol: 'KSH ');
   bool _isLoading = true;
   List<BankAccountModel> _accounts = [];
   BankAccountModel? _selectedAccount;
@@ -200,4 +200,4 @@ class _PaymentPageState extends State<PaymentPage> {
       ),
     );
   }
-} 
+}
