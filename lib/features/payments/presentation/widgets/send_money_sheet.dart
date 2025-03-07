@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/mpesa_service.dart';
 import 'package:intl/intl.dart';
 
 class SendMoneySheet extends StatefulWidget {
@@ -15,6 +16,7 @@ class _SendMoneySheetState extends State<SendMoneySheet> {
   final _noteController = TextEditingController();
   final _accountController = TextEditingController();
   final _billNumberController = TextEditingController();
+  final _phoneController = TextEditingController();
   String _selectedTransactionType = 'send_money';
   String? _selectedPaymentMethod;
 
@@ -194,16 +196,59 @@ class _SendMoneySheetState extends State<SendMoneySheet> {
   }
 
   Widget _buildTransactionForm() {
-    switch (_selectedTransactionType) {
-      case 'pay_bill':
-        return _buildPayBillForm();
-      case 'buy_goods':
-        return _buildBuyGoodsForm();
-      case 'bank_transfer':
-        return _buildBankTransferForm();
-      default:
-        return _buildSendMoneyForm();
-    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        TextFormField(
+          controller: _amountController,
+          keyboardType: TextInputType.number,
+          decoration: const InputDecoration(
+            labelText: 'Amount',
+            prefixIcon: Icon(Icons.attach_money),
+          ),
+          validator: (value) {
+            if (value == null || value.isEmpty) {
+              return 'Please enter amount';
+            }
+            if (double.tryParse(value) == null) {
+              return 'Please enter a valid amount';
+            }
+            return null;
+          },
+        ),
+        if (_selectedPaymentMethod == 'mpesa') ...[          
+          TextFormField(
+            controller: _phoneController,
+            decoration: const InputDecoration(
+              labelText: 'Phone Number',
+              hintText: '254XXXXXXXXX',
+              prefixIcon: Icon(Icons.phone_android),
+            ),
+            keyboardType: TextInputType.phone,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter phone number';
+              }
+              if (!value.startsWith('254')) {
+                return 'Phone number must start with 254';
+              }
+              if (value.length != 12) {
+                return 'Phone number must be 12 digits';
+              }
+              return null;
+            },
+          ),
+        ] else ...[          
+          TextFormField(
+            controller: _recipientController,
+            decoration: const InputDecoration(
+              labelText: 'Recipient',
+              prefixIcon: Icon(Icons.person),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Widget _buildSendMoneyForm() {
@@ -394,10 +439,38 @@ class _SendMoneySheetState extends State<SendMoneySheet> {
     );
   }
 
-  void _handleTransaction() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement transaction logic
-      Navigator.pop(context);
+  void _handleTransaction() async {
+    final formState = _formKey.currentState;
+    if (formState != null && formState.validate()) {
+      try {
+        if (_selectedPaymentMethod == 'mpesa') {
+          final mpesaService = MPesaService(
+            consumerKey: '26T9o63rBICAgJBXd7ZkpyJOVxCNfIF5FraNIbEQsznoqMyc',
+            consumerSecret: 'nrS2pXck3cLLiKPE23vBkJYN1c3sTXTAGVcdIjPUhiHyudpYITso49Qul2ihxfAD',
+          );
+
+          final result = await mpesaService.initiateSTKPush(
+            phoneNumber: _phoneController.text,
+            amount: double.parse(_amountController.text),
+            userId: 'USER_ID', // Replace with actual user ID
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transaction initiated successfully')),
+            );
+            Navigator.pop(context);
+          }
+        } else {
+          // Handle other payment methods
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Transaction failed: $e')),
+          );
+        }
+      }
     }
   }
 
@@ -460,4 +533,4 @@ class _SendMoneySheetState extends State<SendMoneySheet> {
       ),
     );
   }
-} 
+}

@@ -158,7 +158,7 @@ class _HomePageState extends State<HomePage> {
                         children: [
                           AccountBalanceCard(user: _user!),
                           const SizedBox(height: 20),
-                          QuickActions(onActionSelected: _handleQuickAction),
+                          QuickActions(onActionSelected: _handleQuickAction, userId: _user!.id),
                           const SizedBox(height: 20),
                           SpendingInsights(userId: _user!.id),
                           const SizedBox(height: 20),

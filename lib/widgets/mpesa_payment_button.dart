@@ -3,7 +3,10 @@ import '../core/services/mpesa_service.dart';
 
 class MPesaPaymentButton extends StatelessWidget {
   final String userId;
-  final MPesaService _mpesaService = MPesaService();
+  final MPesaService _mpesaService = MPesaService(
+    consumerKey: '26T9o63rBICAgJBXd7ZkpyJOVxCNfIF5FraNIbEQsznoqMyc',
+    consumerSecret: 'nrS2pXck3cLLiKPE23vBkJYN1c3sTXTAGVcdIjPUhiHyudpYITso49Qul2ihxfAD',
+  );
 
   MPesaPaymentButton({super.key, required this.userId});
 

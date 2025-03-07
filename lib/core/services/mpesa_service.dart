@@ -40,14 +40,10 @@ class MPesaService {
       throw Exception('Failed to get access token');
     }
   }
-
   Future<Map<String, dynamic>> initiateSTKPush({
     required String phoneNumber,
     required double amount,
-    required String accountReference,
-    required String description,
-    required String businessShortCode,
-    required String passKey,
+    required String userId,
   }) async {
     try {
       final token = await _getAccessToken();
@@ -56,6 +52,9 @@ class MPesaService {
           .toString()
           .replaceAll(RegExp(r'[^0-9]'), '')
           .substring(0, 14);
+      
+      const businessShortCode = '174379';
+      const passKey = 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919';
       
       final password = base64Encode(
         utf8.encode('$businessShortCode$passKey$timestamp')
@@ -76,9 +75,9 @@ class MPesaService {
           'PartyA': phoneNumber,
           'PartyB': businessShortCode,
           'PhoneNumber': phoneNumber,
-          'CallBackURL': 'YOUR_CALLBACK_URL',
-          'AccountReference': accountReference,
-          'TransactionDesc': description,
+          'CallBackURL': 'https://your-domain.com/api/mpesa/stkCallback',
+          'AccountReference': userId,
+          'TransactionDesc': 'Payment for user $userId',
         }),
       );
 
@@ -132,36 +131,6 @@ class MPesaService {
     } catch (e) {
       debugPrint('Error processing B2C payment: $e');
       rethrow;
-    }
-  }
-}
-
-class MPesaService {
-  final String baseUrl = 'http://localhost:3000/api/mpesa'; // Change in production
-
-  Future<Map<String, dynamic>> initiateSTKPush({
-    required String phoneNumber,
-    required double amount,
-    required String userId,
-  }) async {
-    try {
-      final response = await http.post(
-        Uri.parse('$baseUrl/stkPush'),
-        headers: {'Content-Type': 'application/json'},
-        body: json.encode({
-          'phoneNumber': phoneNumber,
-          'amount': amount,
-          'userId': userId,
-        }),
-      );
-
-      if (response.statusCode == 200) {
-        return json.decode(response.body);
-      } else {
-        throw Exception('Failed to initiate payment: ${response.body}');
-      }
-    } catch (e) {
-      throw Exception('Payment error: $e');
     }
   }
 }

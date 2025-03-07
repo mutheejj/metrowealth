@@ -8,8 +8,13 @@ import 'package:metrowealth/features/loans/presentation/pages/loans_page.dart';
 
 class QuickActions extends StatelessWidget {
   final Function(String) onActionSelected;
+  final String userId;
 
-  const QuickActions({super.key, required this.onActionSelected});
+  const QuickActions({
+    super.key,
+    required this.onActionSelected,
+    required this.userId,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -82,7 +87,7 @@ class QuickActions extends StatelessWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      builder: (context) => const DepositSheet(),
+      builder: (context) => DepositSheet(userId: userId),
     );
   }
 

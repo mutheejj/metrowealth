@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
+import '../../../../core/services/mpesa_service.dart';
 
 class DepositSheet extends StatefulWidget {
-  const DepositSheet({super.key});
-
+  final String userId;
+  const DepositSheet({
+    super.key,
+    required this.userId,
+  });
   @override
   State<DepositSheet> createState() => _DepositSheetState();
 }
@@ -10,8 +14,16 @@ class DepositSheet extends StatefulWidget {
 class _DepositSheetState extends State<DepositSheet> {
   final _formKey = GlobalKey<FormState>();
   final _amountController = TextEditingController();
+  final _phoneController = TextEditingController();
   String? _selectedMethod;
   bool _savePaymentMethod = false;
+
+  @override
+  void dispose() {
+    _amountController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
 
   final List<Map<String, dynamic>> _depositMethods = [
     {
@@ -36,13 +48,6 @@ class _DepositSheetState extends State<DepositSheet> {
       'fee': '1%',
     },
   ];
-
-  @override
-  void dispose() {
-    _amountController.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return DraggableScrollableSheet(
@@ -82,7 +87,7 @@ class _DepositSheetState extends State<DepositSheet> {
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: _selectedMethod != null ? _handleDeposit : null,
+              onPressed: _selectedMethod != null ? _handleTransaction : null,
               child: const Text('Continue'),
             ),
           ],
@@ -251,7 +256,31 @@ class _DepositSheetState extends State<DepositSheet> {
         else if (_selectedMethod == 'bank')
           _buildBankDetails()
         else if (_selectedMethod == 'mpesa')
-          _buildMpesaDetails()
+          Column(
+            children: [
+              TextFormField(
+                controller: _phoneController,
+                decoration: const InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: Icon(Icons.phone),
+                  hintText: 'Enter M-PESA registered number',
+                ),
+                keyboardType: TextInputType.phone,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter phone number';
+                  }
+                  if (!value.startsWith('254')) {
+                    return 'Phone number must start with 254';
+                  }
+                  if (value.length != 12) {
+                    return 'Phone number must be 12 digits';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          )
         else
           _buildCashDetails(),
       ],
@@ -496,11 +525,38 @@ class _DepositSheetState extends State<DepositSheet> {
       ),
     );
   }
+  void _handleTransaction() async {
+    final formState = _formKey.currentState;
+    if (formState != null && formState.validate()) {
+      try {
+        if (_selectedMethod == 'mpesa') {
+          final mpesaService = MPesaService(
+            consumerKey: '26T9o63rBICAgJBXd7ZkpyJOVxCNfIF5FraNIbEQsznoqMyc',
+            consumerSecret: 'nrS2pXck3cLLiKPE23vBkJYN1c3sTXTAGVcdIjPUhiHyudpYITso49Qul2ihxfAD',
+          );
 
-  void _handleDeposit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement deposit logic based on _selectedMethod
-      Navigator.pop(context);
+          final result = await mpesaService.initiateSTKPush(
+            phoneNumber: _phoneController.text,
+            amount: double.parse(_amountController.text),
+            userId: widget.userId,
+          );
+
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Transaction initiated successfully')),
+            );
+            Navigator.pop(context);
+          }
+        } else {
+          // Handle other payment methods
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Transaction failed: $e')),
+          );
+        }
+      }
     }
   }
-} 
+}
