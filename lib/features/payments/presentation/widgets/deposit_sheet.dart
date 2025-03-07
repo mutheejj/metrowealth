@@ -130,7 +130,7 @@ class _DepositSheetState extends State<DepositSheet> {
         TextFormField(
           controller: _amountController,
           decoration: const InputDecoration(
-            prefixIcon: Icon(Icons.attach_money),
+            prefixText: 'KSH ',
             hintText: 'Enter amount',
           ),
           keyboardType: TextInputType.number,
@@ -138,7 +138,7 @@ class _DepositSheetState extends State<DepositSheet> {
             if (value?.isEmpty ?? true) return 'Required';
             final amount = double.tryParse(value!);
             if (amount == null) return 'Invalid amount';
-            if (amount < 100) return 'Minimum deposit is 100';
+            if (amount < 1) return 'Minimum deposit is KSH 1';
             return null;
           },
         ),
@@ -273,8 +273,9 @@ class _DepositSheetState extends State<DepositSheet> {
                   if (!value.startsWith('254')) {
                     return 'Phone number must start with 254';
                   }
-                  if (value.length != 12) {
-                    return 'Phone number must be 12 digits';
+                  // Allow for flexible length but ensure it's a reasonable phone number
+                  if (value.length < 9 || value.length > 12) {
+                    return 'Please enter a valid phone number';
                   }
                   return null;
                 },
