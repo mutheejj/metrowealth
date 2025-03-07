@@ -135,3 +135,33 @@ class MPesaService {
     }
   }
 }
+
+class MPesaService {
+  final String baseUrl = 'http://localhost:3000/api/mpesa'; // Change in production
+
+  Future<Map<String, dynamic>> initiateSTKPush({
+    required String phoneNumber,
+    required double amount,
+    required String userId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/stkPush'),
+        headers: {'Content-Type': 'application/json'},
+        body: json.encode({
+          'phoneNumber': phoneNumber,
+          'amount': amount,
+          'userId': userId,
+        }),
+      );
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        throw Exception('Failed to initiate payment: ${response.body}');
+      }
+    } catch (e) {
+      throw Exception('Payment error: $e');
+    }
+  }
+}

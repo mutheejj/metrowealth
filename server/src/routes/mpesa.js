@@ -4,6 +4,42 @@ const admin = require('../config/firebase');
 
 const db = admin.firestore();
 
+const mpesaService = require('../services/mpesa.service');
+
+// Add this new route before the existing routes
+router.post('/stkPush', async (req, res) => {
+  try {
+    const { phoneNumber, amount, userId } = req.body;
+
+    // Create pending transaction
+    const transactionRef = db.collection('transactions').doc();
+    await transactionRef.set({
+      userId,
+      amount,
+      type: 'deposit',
+      status: 'pending',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // Initiate STK Push
+    const stkResponse = await mpesaService.initiateSTKPush(
+      phoneNumber,
+      amount,
+      transactionRef.id
+    );
+
+    // Update transaction with checkout request ID
+    await transactionRef.update({
+      mpesaCheckoutRequestID: stkResponse.CheckoutRequestID,
+    });
+
+    res.json(stkResponse);
+  } catch (error) {
+    console.error('STK Push Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 router.post('/stkCallback', async (req, res) => {
   try {
     const { Body } = req.body;
