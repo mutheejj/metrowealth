@@ -37,12 +37,6 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
-      final insights = await _db.getSpendingInsights(
-        widget.userId,
-        startOfMonth,
-        endOfMonth,
-      );
-
       final transactions = await _db.getTransactions(
         widget.userId,
         startOfMonth,
@@ -51,8 +45,9 @@ class _SpendingInsightsState extends State<SpendingInsights> {
 
       final transactionSpending = <String, double>{};
       for (var transaction in transactions) {
-        if (transaction.title.isNotEmpty) {
-          transactionSpending[transaction.title] = (transactionSpending[transaction.title] ?? 0) + transaction.amount;
+        if (transaction.categoryId.isNotEmpty && transaction.type == 'expense') {
+          transactionSpending[transaction.categoryId] = 
+              (transactionSpending[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
 

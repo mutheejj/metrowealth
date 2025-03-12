@@ -28,6 +28,8 @@ class _BudgetOverviewState extends State<BudgetOverview> {
     _loadData();
   }
 
+  Map<String, double> _budgets = {};
+
   Future<void> _loadData() async {
     try {
       setState(() => _isLoading = true);
@@ -36,6 +38,13 @@ class _BudgetOverviewState extends State<BudgetOverview> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
+      // Get category budgets
+      final categoryBudgets = await _db.getCategoryBudgets(widget.userId);
+      _budgets = Map.fromEntries(
+        categoryBudgets.entries.map((e) => MapEntry(e.key, e.value.toDouble()))
+      );
+
+      // Get transactions
       final transactions = await _db.getTransactions(
         widget.userId,
         startOfMonth,
@@ -44,8 +53,9 @@ class _BudgetOverviewState extends State<BudgetOverview> {
 
       final transactionSpending = <String, double>{};
       for (var transaction in transactions) {
-        if (transaction.title.isNotEmpty) {
-          transactionSpending[transaction.title] = (transactionSpending[transaction.title] ?? 0) + transaction.amount;
+        if (transaction.categoryId.isNotEmpty) {
+          transactionSpending[transaction.categoryId] = 
+              (transactionSpending[transaction.categoryId] ?? 0) + transaction.amount;
         }
       }
 
@@ -102,10 +112,11 @@ class _BudgetOverviewState extends State<BudgetOverview> {
         ),
         const SizedBox(height: 16),
         ..._categorySpending.entries.map((entry) {
+          final budget = _budgets[entry.key] ?? 0.0;
           return _buildBudgetItem(
             category: entry.key,
             spent: entry.value,
-            budget: 1000, // Replace with actual budget from user settings
+            budget: budget,
           );
         }).toList(),
       ],

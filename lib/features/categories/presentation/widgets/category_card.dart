@@ -28,9 +28,8 @@ class CategoryCard extends StatelessWidget {
         fontFamily: 'MaterialIcons',
       );
     } catch (e) {
-      iconData = Icons.category_outlined;
+      iconData = const IconData(0xe5c3, fontFamily: 'MaterialIcons'); // Default category icon
     }
-
     return Hero(
       tag: 'category_${category.id}',
       child: Container(
@@ -165,4 +164,4 @@ class CategoryCard extends StatelessWidget {
       ),
     );
   }
-} 
+}

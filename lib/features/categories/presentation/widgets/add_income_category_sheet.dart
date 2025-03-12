@@ -267,7 +267,7 @@ class _AddIncomeCategorySheetState extends State<AddIncomeCategorySheet> {
                             ),
                           ),
                           child: Icon(
-                            IconData(int.parse('0x$iconCode'), fontFamily: 'MaterialIcons'),
+                            const IconData(0xe000, fontFamily: 'MaterialIcons'),
                             color: isSelected ? _selectedColor : Colors.grey[600],
                           ),
                         ),
@@ -363,4 +363,4 @@ class _AddIncomeCategorySheetState extends State<AddIncomeCategorySheet> {
       ),
     );
   }
-} 
+}

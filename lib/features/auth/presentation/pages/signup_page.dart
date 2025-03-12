@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
 import 'package:metrowealth/features/auth/presentation/pages/login_page.dart';
+import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
@@ -117,9 +118,28 @@ class _SignupPageState extends State<SignupPage> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: AppColors.primary),
-          onPressed: () => Navigator.pop(context),
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.primary,
+          ),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WelcomeScreen(),
+            ),
+          ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.admin_panel_settings,
+              color: AppColors.primary,
+            ),
+            onPressed: () {
+              // Admin functionality to be implemented
+            },
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -255,12 +275,7 @@ class _SignupPageState extends State<SignupPage> {
                     ),
                     TextButton(
                       onPressed: () {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
+                        Navigator.pop(context);
                       },
                       child: const Text(
                         'Sign In',
@@ -279,4 +294,4 @@ class _SignupPageState extends State<SignupPage> {
       ),
     );
   }
-} 
+}

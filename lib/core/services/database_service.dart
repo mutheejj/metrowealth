@@ -43,11 +43,35 @@ class DatabaseService {
     }
   }
 
+  // Get category budgets for a user
+  Future<Map<String, num>> getCategoryBudgets(String userId) async {
+    try {
+      final querySnapshot = await _db
+          .collection('users')
+          .doc(userId)
+          .collection('categories')
+          .get();
+
+      final budgets = <String, num>{};
+      for (var doc in querySnapshot.docs) {
+        final data = doc.data();
+        if (data.containsKey('budget')) {
+          budgets[doc.id] = data['budget'] as num;
+        }
+      }
+      return budgets;
+    } catch (e) {
+      debugPrint('Error fetching category budgets: $e');
+      rethrow;
+    }
+  }
+
   // Create default categories for new users
   Future<void> _createDefaultCategories(String userId) async {
     try {
       final batch = _db.batch();
       final categoriesRef = _db.collection('users').doc(userId).collection('categories');
+
 
       final defaultCategories = [
         {'name': 'Food & Dining', 'icon': 'restaurant', 'budget': 0.0},

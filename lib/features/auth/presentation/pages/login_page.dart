@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/auth/data/repositories/auth_repository.dart';
 import 'package:metrowealth/features/auth/presentation/pages/signup_page.dart';
+import 'package:metrowealth/features/auth/presentation/pages/welcome_screen.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_button.dart';
 import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/admin_panel.dart';
+
+import '../../../admin/presentation/pages/admin_login_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, this.showForgotPassword = false});
@@ -60,7 +64,12 @@ class _LoginPageState extends State<LoginPage> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WelcomeScreen(),
+            ),
+          ),
             child: const Text('Cancel'),
           ),
           TextButton(
@@ -96,6 +105,38 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(
+            Icons.arrow_back,
+            color: AppColors.primary,
+          ),
+          onPressed: () => Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const WelcomeScreen(),
+            ),
+          ),
+        ),
+        actions: [
+          IconButton(
+            icon: const Icon(
+              Icons.admin_panel_settings,
+              color: AppColors.primary,
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AdminLoginPage(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
@@ -286,4 +327,4 @@ class _LoginPageState extends State<LoginPage> {
       ),
     );
   }
-} 
+}

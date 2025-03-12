@@ -233,7 +233,7 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
                             ),
                           ),
                           child: Icon(
-                            IconData(int.parse('0x$iconCode'), fontFamily: 'MaterialIcons'),
+                            const IconData(0xe000, fontFamily: 'MaterialIcons'),
                             color: isSelected ? _selectedColor : Colors.grey[600],
                           ),
                         ),
@@ -329,4 +329,4 @@ class _AddCategorySheetState extends State<AddCategorySheet> {
       ),
     );
   }
-} 
+}
