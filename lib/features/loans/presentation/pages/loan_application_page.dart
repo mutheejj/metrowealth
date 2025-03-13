@@ -10,6 +10,8 @@ class LoanApplicationPage extends StatefulWidget {
 class _LoanApplicationPageState extends State<LoanApplicationPage> {
   final _formKey = GlobalKey<FormState>();
   int _currentStep = 0;
+  bool _isSubmitting = false;
+  String? _selectedDocumentPath;
   
   // Form controllers
   final _amountController = TextEditingController();
@@ -17,10 +19,22 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
   final _monthlyIncomeController = TextEditingController();
   final _employerController = TextEditingController();
   final _employmentDurationController = TextEditingController();
+  final _phoneController = TextEditingController();
+  final _addressController = TextEditingController();
   
   // Selected values
   String? _selectedLoanType;
   int? _selectedTenure;
+  String? _selectedEmploymentType = 'Full-time';
+  
+  // Employment types
+  final List<String> _employmentTypes = [
+    'Full-time',
+    'Part-time',
+    'Self-employed',
+    'Business owner',
+    'Other'
+  ];
   
   // Loan products
   final List<Map<String, dynamic>> _loanProducts = [
@@ -66,6 +80,30 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
     super.dispose();
   }
 
+  Future<void> _submitApplication() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isSubmitting = true);
+    try {
+      // TODO: Implement loan submission logic
+      await Future.delayed(const Duration(seconds: 2)); // Simulated API call
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Loan application submitted successfully!')),
+        );
+        Navigator.pop(context);
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error submitting application: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -78,7 +116,9 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
           currentStep: _currentStep,
           onStepContinue: () {
             if (_currentStep < 3) {
-              setState(() => _currentStep++);
+              if (_formKey.currentState!.validate()) {
+                setState(() => _currentStep++);
+              }
             } else {
               _submitApplication();
             }
@@ -374,18 +414,5 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
         ],
       ),
     );
-  }
-
-  void _submitApplication() {
-    if (_formKey.currentState?.validate() ?? false) {
-      // TODO: Implement loan application submission
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Loan application submitted successfully!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pop(context);
-    }
   }
 }

@@ -229,15 +229,19 @@ class _ReportsPageState extends State<ReportsPage> {
               children: [
                 Icon(icon, color: color),
                 const SizedBox(width: 8),
-                Text(
-                  title,
-                  style: const TextStyle(fontSize: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    style: const TextStyle(fontSize: 16),
+                    overflow: TextOverflow.ellipsis,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 8),
             Text(
               value,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 fontSize: 24,
                 fontWeight: FontWeight.bold,
