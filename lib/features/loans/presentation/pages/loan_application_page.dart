@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metrowealth/features/loans/data/services/loan_service.dart';
 
 class LoanApplicationPage extends StatefulWidget {
   const LoanApplicationPage({super.key});
@@ -12,6 +14,7 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
   int _currentStep = 0;
   bool _isSubmitting = false;
   String? _selectedDocumentPath;
+  final _loanService = LoanService();
   
   // Form controllers
   final _amountController = TextEditingController();
@@ -85,8 +88,34 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
 
     setState(() => _isSubmitting = true);
     try {
-      // TODO: Implement loan submission logic
-      await Future.delayed(const Duration(seconds: 2)); // Simulated API call
+      final selectedProduct = _loanProducts.firstWhere(
+        (product) => product['id'] == _selectedLoanType,
+      );
+
+      // Check loan eligibility
+      final isEligible = await _loanService.isEligibleForLoan(
+        FirebaseAuth.instance.currentUser!.uid,
+      );
+      
+      if (!isEligible) {
+        throw 'You have reached the maximum number of active loans';
+      }
+
+      // Prepare loan data
+      final loanData = {
+        'productId': selectedProduct['id'],
+        'productName': selectedProduct['name'],
+        'amount': double.parse(_amountController.text),
+        'tenure': _selectedTenure,
+        'purpose': _purposeController.text,
+        'interestRate': selectedProduct['interestRate'],
+        'monthlyIncome': double.parse(_monthlyIncomeController.text),
+        'employer': _employerController.text,
+        'employmentDuration': double.parse(_employmentDurationController.text),
+      };
+
+      await _loanService.submitLoanApplication(loanData);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Loan application submitted successfully!')),
@@ -116,6 +145,12 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
           currentStep: _currentStep,
           onStepContinue: () {
             if (_currentStep < 3) {
+              if (_currentStep == 0 && _selectedLoanType == null) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Please select a loan product')),
+                );
+                return;
+              }
               if (_formKey.currentState!.validate()) {
                 setState(() => _currentStep++);
               }

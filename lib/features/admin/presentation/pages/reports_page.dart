@@ -50,14 +50,15 @@ class _ReportsPageState extends State<ReportsPage> {
                       padding: const EdgeInsets.all(16),
                       child: Row(
                         children: [
-                          Text(
-                            DateFormat('MMMM yyyy').format(_selectedMonth),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              DateFormat('MMMM yyyy').format(_selectedMonth),
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
                           ),
-                          const Spacer(),
                           IconButton(
                             icon: const Icon(Icons.calendar_today),
                             onPressed: () async {
@@ -73,10 +74,10 @@ class _ReportsPageState extends State<ReportsPage> {
                               }
                             },
                           ),
-                          const SizedBox(width: 16),
+                          const SizedBox(width: 8),
                           FilledButton.icon(
                             icon: const Icon(Icons.download),
-                            label: const Text('Export Report'),
+                            label: const Text('Export'),
                             onPressed: () {
                               // TODO: Implement export functionality
                             },

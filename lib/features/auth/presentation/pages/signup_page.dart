@@ -8,6 +8,8 @@ import 'package:metrowealth/features/auth/presentation/widgets/custom_text_field
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:flutter/foundation.dart';
 
+import 'driver_registration_page.dart';
+
 class SignupPage extends StatefulWidget {
   const SignupPage({super.key});
 
@@ -46,7 +48,7 @@ class _SignupPageState extends State<SignupPage> {
     try {
       debugPrint('Starting signup process...');
       
-      await _authRepository.signUp(
+      final userCredential = await _authRepository.signUp(
         email: _emailController.text.trim(),
         password: _passwordController.text,
         fullName: _fullNameController.text.trim(),
@@ -57,7 +59,7 @@ class _SignupPageState extends State<SignupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account created successfully!'),
+            content: Text('Account created successfully! Please complete your driver registration.'),
             backgroundColor: Colors.green,
           ),
         );
@@ -67,7 +69,9 @@ class _SignupPageState extends State<SignupPage> {
         if (mounted) {
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const HomePage()),
+            MaterialPageRoute(
+              builder: (context) => DriverRegistrationPage(userId: userCredential.user!.uid),
+            ),
           );
         }
       }
