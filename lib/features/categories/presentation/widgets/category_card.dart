@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/core/utils/icon_manager.dart';
 import 'package:intl/intl.dart';
 
 class CategoryCard extends StatelessWidget {
@@ -21,15 +22,7 @@ class CategoryCard extends StatelessWidget {
     final isOverBudget = category.spent > category.budget && category.budget > 0;
     final currencyFormat = NumberFormat.currency(symbol: 'KSH ', decimalDigits: 0);
 
-    IconData iconData;
-    try {
-      iconData = IconData(
-        int.parse('0x${category.icon}'),
-        fontFamily: 'MaterialIcons',
-      );
-    } catch (e) {
-      iconData = const IconData(0xe5c3, fontFamily: 'MaterialIcons'); // Default category icon
-    }
+    final iconData = IconManager.getCategoryIcon(category.icon);
     return Hero(
       tag: 'category_${category.id}',
       child: Container(

@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:metrowealth/features/transactions/data/repositories/transaction_repository.dart';
+import 'package:metrowealth/core/utils/icon_manager.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
@@ -314,10 +315,7 @@ class _AddIncomePageState extends State<AddIncomePage> {
           child: Row(
             children: [
               Icon(
-                IconData(
-                  int.parse('0x${widget.category.icon}'),
-                  fontFamily: 'MaterialIcons',
-                ),
+                IconManager.getCategoryIcon(widget.category.icon),
                 color: widget.category.color,
               ),
               const SizedBox(width: 12),
@@ -823,4 +821,4 @@ class _AddIncomePageState extends State<AddIncomePage> {
       ),
     );
   }
-} 
+}

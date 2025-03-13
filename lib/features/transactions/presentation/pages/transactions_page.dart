@@ -548,7 +548,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                 ),
                 child: Icon(
                   IconData(
-                    int.parse('0x${category?.icon ?? 'e5c3'}'),
+                    int.parse('0x${category?.icon ?? "e5c3"}'),
                     fontFamily: 'MaterialIcons',
                   ),
                   color: category?.color ?? Colors.blue,
