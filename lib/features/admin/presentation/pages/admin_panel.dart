@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:metrowealth/features/admin/data/services/admin_service.dart';
 import 'package:metrowealth/features/admin/presentation/pages/users_management_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/transactions_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/loans_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/reports_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/settings_page.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({super.key});
@@ -20,6 +25,31 @@ class _AdminPanelState extends State<AdminPanel> {
     'Loans',
     'Reports'
   ];
+
+  final AdminService _adminService = AdminService();
+  Map<String, dynamic> _dashboardStats = {
+    'totalUsers': 0,
+    'totalTransactions': 0,
+    'activeLoans': 0,
+    'revenue': 0.0
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDashboardStats();
+  }
+
+  Future<void> _loadDashboardStats() async {
+    try {
+      final stats = await _adminService.getDashboardStats();
+      setState(() {
+        _dashboardStats = stats;
+      });
+    } catch (e) {
+      debugPrint('Error loading dashboard stats: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +155,12 @@ class _AdminPanelState extends State<AdminPanel> {
               title: const Text('Settings'),
               onTap: () {
                 Navigator.pop(context);
-                // TODO: Implement settings navigation
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const AdminSettingsPage(),
+                  ),
+                );
               },
             ),
           ],
@@ -142,48 +177,115 @@ class _AdminPanelState extends State<AdminPanel> {
       case 1:
         return const UsersManagementPage();
       case 2:
-        return _buildTransactions();
+        return const TransactionsPage();
       case 3:
-        return _buildLoans();
+        return const LoansPage();
       case 4:
-        return _buildReports();
+        return const ReportsPage();
       default:
         return const Center(child: Text('Coming Soon'));
     }
   }
 
   Widget _buildDashboard() {
-    return GridView.count(
-      padding: const EdgeInsets.all(16),
-      crossAxisCount: 2,
-      crossAxisSpacing: 16,
-      mainAxisSpacing: 16,
-      children: [
-        _buildStatCard(
-          'Total Users',
-          '1,234',
-          Icons.people,
-          Colors.blue,
+    return RefreshIndicator(
+      onRefresh: _loadDashboardStats,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            GridView.count(
+              padding: const EdgeInsets.all(16),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: 2,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+              children: [
+                _buildStatCard(
+                  'Total Users',
+                  _dashboardStats['totalUsers'].toString(),
+                  Icons.people,
+                  Colors.blue,
+                ),
+                _buildStatCard(
+                  'Total Transactions',
+                  'KSH ${_dashboardStats['totalTransactions']}',
+                  Icons.receipt_long,
+                  Colors.green,
+                ),
+                _buildStatCard(
+                  'Active Loans',
+                  _dashboardStats['activeLoans'].toString(),
+                  Icons.account_balance,
+                  Colors.orange,
+                ),
+                _buildStatCard(
+                  'Revenue',
+                  'KSH ${_dashboardStats['revenue'].toStringAsFixed(2)}',
+                  Icons.analytics,
+                  Colors.purple,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Card(
+              margin: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Recent Activity',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _adminService.getTransactionsStream(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return const Text('Error loading transactions');
+                        }
+
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
+
+                        final transactions = snapshot.data?.docs.take(5).toList() ?? [];
+
+                        return Column(
+                          children: transactions.map((transaction) {
+                            final data = transaction.data() as Map<String, dynamic>;
+                            return ListTile(
+                              leading: Icon(
+                                data['type'] == 'income' ? Icons.arrow_upward : Icons.arrow_downward,
+                                color: data['type'] == 'income' ? Colors.green : Colors.red,
+                              ),
+                              title: Text(data['title'] ?? 'Unknown Transaction'),
+                              subtitle: Text(data['date']?.toDate()?.toString() ?? 'No date'),
+                              trailing: Text(
+                                'KSH ${(data['amount'] as num).toStringAsFixed(2)}',
+                                style: TextStyle(
+                                  color: data['type'] == 'income' ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
-        _buildStatCard(
-          'Total Transactions',
-          'KSH 45,678',
-          Icons.receipt_long,
-          Colors.green,
-        ),
-        _buildStatCard(
-          'Active Loans',
-          '89',
-          Icons.account_balance,
-          Colors.orange,
-        ),
-        _buildStatCard(
-          'Revenue',
-          'KSH 123,456',
-          Icons.analytics,
-          Colors.purple,
-        ),
-      ],
+      ),
     );
   }
 
