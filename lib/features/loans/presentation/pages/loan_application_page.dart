@@ -154,12 +154,58 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
                 );
                 canContinue = false;
               } else if (_currentStep == 1) {
-                canContinue = _formKey.currentState?.validate() ?? false;
-                if (!canContinue) {
+                // Validate all loan details fields
+                bool isValid = _formKey.currentState?.validate() ?? false;
+                
+                // Check all required fields
+                if (_amountController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please fill all required loan details correctly')),
+                    const SnackBar(content: Text('Please enter loan amount')),
                   );
+                  isValid = false;
                 }
+                
+                if (_selectedTenure == null) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please select loan tenure')),
+                  );
+                  isValid = false;
+                }
+                
+                if (_purposeController.text.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please enter loan purpose')),
+                  );
+                  isValid = false;
+                }
+                
+                // Additional validation for loan amount
+                if (_amountController.text.isNotEmpty) {
+                  final amount = double.tryParse(_amountController.text);
+                  final selectedProduct = _loanProducts.firstWhere(
+                    (product) => product['id'] == _selectedLoanType,
+                    orElse: () => _loanProducts.first,
+                  );
+                  
+                  if (amount == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Please enter a valid loan amount')),
+                    );
+                    isValid = false;
+                  } else if (amount < selectedProduct['minAmount']) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Minimum loan amount is KSH ${selectedProduct['minAmount']}')),
+                    );
+                    isValid = false;
+                  } else if (amount > selectedProduct['maxAmount']) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Maximum loan amount is KSH ${selectedProduct['maxAmount']}')),
+                    );
+                    isValid = false;
+                  }
+                }
+                
+                canContinue = isValid;
               } else if (_currentStep == 2) {
                 canContinue = _formKey.currentState?.validate() ?? false;
                 if (!canContinue) {
