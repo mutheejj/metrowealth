@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/core/utils/icon_manager.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_goal_detail_page.dart';
 
@@ -31,7 +33,7 @@ class SavingsGoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      elevation: 4,
+      elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => Navigator.push(
@@ -48,127 +50,83 @@ class SavingsGoalCard extends StatelessWidget {
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
               colors: [
-                Theme.of(context).primaryColor.withOpacity(0.05),
-                Colors.white,
+                AppColors.primary.withOpacity(0.05),
+                AppColors.surface,
               ],
             ),
           ),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Icon(
+                        IconManager.getCategoryIcon(goal.name),
+                        color: AppColors.primary,
+                        size: 24,
+                      ),
                     ),
-                    child: Icon(
-                      Icons.savings,
-                      color: Theme.of(context).primaryColor,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          goal.title,
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            goal.title,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          _getRemainingTimeText(),
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 14,
+                          Text(
+                            _getRemainingTimeText(),
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: _getProgressColor(context).withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      '${(goal.progressPercentage * 100).toStringAsFixed(0)}%',
-                      style: TextStyle(
-                        color: _getProgressColor(context),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                LinearProgressIndicator(
+                  value: goal.progressPercentage,
+                  backgroundColor: AppColors.primary.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(_getProgressColor(context)),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      currencyFormat.format(goal.savedAmount),
+                      style: const TextStyle(
+                        fontSize: 16,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.primary,
                       ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Stack(
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: LinearProgressIndicator(
-                      value: goal.progressPercentage,
-                      backgroundColor: Colors.grey[200],
-                      valueColor: AlwaysStoppedAnimation<Color>(_getProgressColor(context)),
-                      minHeight: 8,
+                    Text(
+                      currencyFormat.format(goal.targetAmount),
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey[600],
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Saved',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(goal.currentAmount),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      Text(
-                        'Target',
-                        style: TextStyle(
-                          color: Colors.grey[600],
-                          fontSize: 12,
-                        ),
-                      ),
-                      Text(
-                        currencyFormat.format(goal.targetAmount),
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

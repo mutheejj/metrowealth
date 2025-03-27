@@ -1,8 +1,46 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metrowealth/core/constants/app_colors.dart';
+import 'package:metrowealth/features/loans/data/services/loan_service.dart';
 import 'package:metrowealth/features/loans/presentation/pages/loan_application_page.dart';
+import 'package:metrowealth/features/loans/presentation/widgets/empty_loans_state.dart';
 
-class LoansPage extends StatelessWidget {
+class LoansPage extends StatefulWidget {
   const LoansPage({super.key});
+
+  @override
+  State<LoansPage> createState() => _LoansPageState();
+}
+
+class _LoansPageState extends State<LoansPage> {
+  final _loanService = LoanService();
+  final _auth = FirebaseAuth.instance;
+  List<Map<String, dynamic>>? _loans;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLoans();
+  }
+
+  Future<void> _loadLoans() async {
+    try {
+      final userId = _auth.currentUser?.uid;
+      if (userId != null) {
+        final loans = await _loanService.getUserLoans(userId);
+        setState(() {
+          _loans = loans;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _loans = [];
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -13,7 +51,11 @@ class LoansPage extends StatelessWidget {
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _loans == null || _loans!.isEmpty
+              ? const EmptyLoansState()
+              : SingleChildScrollView(
         child: Column(
           children: [
             Container(

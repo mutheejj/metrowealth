@@ -145,13 +145,31 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
           currentStep: _currentStep,
           onStepContinue: () {
             if (_currentStep < 3) {
+              bool canContinue = true;
+              
+              // Validate current step
               if (_currentStep == 0 && _selectedLoanType == null) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Please select a loan product')),
                 );
-                return;
+                canContinue = false;
+              } else if (_currentStep == 1) {
+                canContinue = _formKey.currentState?.validate() ?? false;
+                if (!canContinue) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all required loan details correctly')),
+                  );
+                }
+              } else if (_currentStep == 2) {
+                canContinue = _formKey.currentState?.validate() ?? false;
+                if (!canContinue) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please fill all employment details correctly')),
+                  );
+                }
               }
-              if (_formKey.currentState!.validate()) {
+              
+              if (canContinue) {
                 setState(() => _currentStep++);
               }
             } else {

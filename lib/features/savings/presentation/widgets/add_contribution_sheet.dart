@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 import 'package:intl/intl.dart';
 
@@ -40,9 +41,9 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
 
     return Container(
       padding: const EdgeInsets.all(20),
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
       ),
       child: Form(
         key: _formKey,
@@ -55,12 +56,12 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Theme.of(context).primaryColor.withOpacity(0.1),
+                    color: AppColors.primary.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.savings,
-                    color: Theme.of(context).primaryColor,
+                    color: AppColors.primary,
                     size: 28,
                   ),
                 ),
@@ -78,9 +79,9 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: Colors.grey[50],
+                color: AppColors.background,
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+                border: Border.all(color: AppColors.primary.withOpacity(0.1)),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -128,10 +129,10 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
               controller: _amountController,
               decoration: InputDecoration(
                 labelText: 'Amount',
-                prefixIcon: Icon(Icons.attach_money, color: Theme.of(context).primaryColor),
+                prefixIcon: const Icon(Icons.attach_money, color: AppColors.primary),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
               ),
               keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
@@ -151,10 +152,10 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
               controller: _noteController,
               decoration: InputDecoration(
                 labelText: 'Note (Optional)',
-                prefixIcon: Icon(Icons.note, color: Theme.of(context).primaryColor),
+                prefixIcon: const Icon(Icons.note, color: AppColors.primary),
                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 filled: true,
-                fillColor: Colors.white,
+                fillColor: AppColors.surface,
               ),
               maxLines: 2,
             ),
@@ -162,7 +163,7 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
             ElevatedButton(
               onPressed: _handleSubmit,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).primaryColor,
+                backgroundColor: AppColors.primary,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
@@ -184,9 +185,9 @@ class _AddContributionSheetState extends State<AddContributionSheet> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey[300]!),
+          border: Border.all(color: AppColors.primary.withOpacity(0.1)),
         ),
         child: Column(
           children: [
