@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/features/loans/data/services/loan_service.dart';
+import 'package:metrowealth/features/notifications/data/services/notification_service.dart';
 
 class LoanApplicationPage extends StatefulWidget {
   const LoanApplicationPage({super.key});
@@ -15,6 +16,7 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
   bool _isSubmitting = false;
   String? _selectedDocumentPath;
   final _loanService = LoanService();
+  final _notificationService = NotificationService();
   
   // Form controllers
   final _amountController = TextEditingController();
@@ -116,6 +118,14 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
 
       await _loanService.submitLoanApplication(loanData);
 
+      // Create notification for loan application
+      final notificationService = NotificationService();
+      await notificationService.createNotification(
+        title: 'Loan Application Submitted',
+        message: 'Your ${selectedProduct['name']} application for KSH ${_amountController.text} has been submitted successfully. We will review your application and notify you of the status.',
+        type: 'loan_application',
+      );
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Loan application submitted successfully!')),
@@ -154,58 +164,35 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
                 );
                 canContinue = false;
               } else if (_currentStep == 1) {
-                // Validate all loan details fields
-                bool isValid = _formKey.currentState?.validate() ?? false;
-                
-                // Check all required fields
-                if (_amountController.text.isEmpty) {
+                // Validate loan details fields
+                if (_amountController.text.isEmpty ||
+                    _selectedTenure == null ||
+                    _purposeController.text.isEmpty) {
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter loan amount')),
+                    const SnackBar(content: Text('Please fill all required fields')),
                   );
-                  isValid = false;
-                }
-                
-                if (_selectedTenure == null) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please select loan tenure')),
-                  );
-                  isValid = false;
-                }
-                
-                if (_purposeController.text.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('Please enter loan purpose')),
-                  );
-                  isValid = false;
-                }
-                
-                // Additional validation for loan amount
-                if (_amountController.text.isNotEmpty) {
+                  canContinue = false;
+                } else {
                   final amount = double.tryParse(_amountController.text);
                   final selectedProduct = _loanProducts.firstWhere(
                     (product) => product['id'] == _selectedLoanType,
                     orElse: () => _loanProducts.first,
                   );
                   
-                  if (amount == null) {
+                  if (amount == null ||
+                      amount < selectedProduct['minAmount'] ||
+                      amount > selectedProduct['maxAmount']) {
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Please enter a valid loan amount')),
+                      SnackBar(content: Text(
+                        'Loan amount must be between KSH ${selectedProduct['minAmount']} and KSH ${selectedProduct['maxAmount']}'
+                      )),
                     );
-                    isValid = false;
-                  } else if (amount < selectedProduct['minAmount']) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Minimum loan amount is KSH ${selectedProduct['minAmount']}')),
-                    );
-                    isValid = false;
-                  } else if (amount > selectedProduct['maxAmount']) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Maximum loan amount is KSH ${selectedProduct['maxAmount']}')),
-                    );
-                    isValid = false;
+                    canContinue = false;
+                  } else {
+                    // All validations passed, can continue
+                    canContinue = true;
                   }
                 }
-                
-                canContinue = isValid;
               } else if (_currentStep == 2) {
                 canContinue = _formKey.currentState?.validate() ?? false;
                 if (!canContinue) {
