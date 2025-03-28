@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/features/loans/data/services/loan_service.dart';
 import 'package:metrowealth/features/notifications/data/services/notification_service.dart';
+import 'package:metrowealth/features/notifications/data/services/email_service.dart';
 
 class LoanApplicationPage extends StatefulWidget {
   const LoanApplicationPage({super.key});
@@ -17,6 +18,7 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
   String? _selectedDocumentPath;
   final _loanService = LoanService();
   final _notificationService = NotificationService();
+  final _emailService = EmailService();
   
   // Form controllers
   final _amountController = TextEditingController();
@@ -116,11 +118,14 @@ class _LoanApplicationPageState extends State<LoanApplicationPage> {
         'employmentDuration': double.parse(_employmentDurationController.text),
       };
 
+      // Submit loan application and get the response
       await _loanService.submitLoanApplication(loanData);
 
-      // Create notification for loan application
-      final notificationService = NotificationService();
-      await notificationService.createNotification(
+      // Send email notification
+      await _emailService.sendLoanApplicationEmail(loanData);
+
+      // Create in-app notification
+      await _notificationService.createNotification(
         title: 'Loan Application Submitted',
         message: 'Your ${selectedProduct['name']} application for KSH ${_amountController.text} has been submitted successfully. We will review your application and notify you of the status.',
         type: 'loan_application',

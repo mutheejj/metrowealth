@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:mailer/mailer.dart';
 import 'package:mailer/smtp_server.dart';
 
@@ -92,15 +93,19 @@ class NotificationService {
 
       if (userEmail == null) return;
 
-      // Configure email server with Gmail SMTP
-      final smtpServer = gmail(
-        'metrowealth.notifications@gmail.com',
-        'app_password_here', // Replace with actual app password from Gmail
+      // Configure SMTP server
+      final smtpServer = SmtpServer(
+        dotenv.env['SMTP_HOST'] ?? 'smtp.gmail.com',
+        port: int.parse(dotenv.env['SMTP_PORT'] ?? '587'),
+        username: dotenv.env['SMTP_USERNAME'],
+        password: dotenv.env['SMTP_PASSWORD'],
+        ssl: false,
+        allowInsecure: true,
       );
 
       // Create a professional email message
       final emailMessage = Message()
-        ..from = Address('metrowealth.notifications@gmail.com', 'MetroWealth Notifications')
+        ..from = Address(dotenv.env['SMTP_USERNAME'] ?? '', dotenv.env['SMTP_FROM_NAME'] ?? 'MetroWealth Notifications')
         ..recipients.add(userEmail)
         ..subject = 'MetroWealth: $title'
         ..html = '''

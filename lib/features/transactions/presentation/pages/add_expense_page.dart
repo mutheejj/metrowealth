@@ -251,7 +251,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
             children: [
               Icon(
                 IconData(
-                  int.parse('0x${widget.category.icon}', radix: 16),
+                  int.parse(widget.category.icon, radix: 16),
                   fontFamily: 'MaterialIcons',
                 ),
                 color: widget.category.color,

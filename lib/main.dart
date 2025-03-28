@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:metrowealth/core/services/firebase_service.dart';
 import 'package:metrowealth/features/auth/presentation/pages/splash_screen.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_container.dart';
@@ -11,6 +12,9 @@ import 'package:metrowealth/features/profile/presentation/pages/profile_page.dar
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // Load environment variables
+  await dotenv.load();
   
   // Initialize Firebase
   await FirebaseService.initialize();
