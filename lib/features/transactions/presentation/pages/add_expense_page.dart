@@ -7,6 +7,8 @@ import 'package:metrowealth/features/transactions/data/repositories/transaction_
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:uuid/uuid.dart';
 
+import '../../../../core/utils/icon_manager.dart';
+
 class AddExpensePage extends StatefulWidget {
   final CategoryModel category;
 
@@ -250,10 +252,7 @@ class _AddExpensePageState extends State<AddExpensePage> {
           child: Row(
             children: [
               Icon(
-                IconData(
-                  int.parse(widget.category.icon, radix: 16),
-                  fontFamily: 'MaterialIcons',
-                ),
+                IconManager.getCategoryIcon(widget.category.icon),
                 color: widget.category.color,
               ),
               const SizedBox(width: 12),

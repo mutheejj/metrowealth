@@ -3,6 +3,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/admin/data/services/admin_service.dart';
+import 'package:metrowealth/features/notifications/data/services/email_service.dart';
+import 'package:metrowealth/features/notifications/data/services/notification_service.dart';
 
 class LoansPage extends StatefulWidget {
   const LoansPage({super.key});
@@ -13,17 +15,24 @@ class LoansPage extends StatefulWidget {
 
 class _LoansPageState extends State<LoansPage> {
   final AdminService _adminService = AdminService();
+  final EmailService _emailService = EmailService();
+  final NotificationService _notificationService = NotificationService();
   String _selectedStatus = 'all';
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
 
+  final TextEditingController _commentController = TextEditingController();
+
   @override
   void dispose() {
     _searchController.dispose();
+    _commentController.dispose();
     super.dispose();
   }
 
-  void _showLoanDetailsDialog(Map<String, dynamic> loanData) {
+  void _showLoanDetailsDialog(QueryDocumentSnapshot doc) {
+    final loanData = doc.data() as Map<String, dynamic>;
+    _commentController.clear();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -33,14 +42,14 @@ class _LoansPageState extends State<LoansPage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildDetailRow('Applicant', loanData['applicantName']),
-              _buildDetailRow('Amount', 'KSH ${loanData['amount'].toStringAsFixed(2)}'),
-              _buildDetailRow('Purpose', loanData['purpose']),
-              _buildDetailRow('Duration', '${loanData['duration']} months'),
-              _buildDetailRow('Interest Rate', '${loanData['interestRate']}%'),
-              _buildDetailRow('Status', loanData['status'].toUpperCase()),
+              _buildDetailRow('Applicant', loanData['userEmail']?.toString() ?? 'N/A'),
+              _buildDetailRow('Amount', 'KSH ${(loanData['amount'] ?? 0.0).toStringAsFixed(2)}'),
+              _buildDetailRow('Purpose', loanData['purpose']?.toString() ?? 'N/A'),
+              _buildDetailRow('Duration', '${loanData['tenure']?.toString() ?? '0'} months'),
+              _buildDetailRow('Interest Rate', '${loanData['interestRate'] ?? 0}%'),
+              _buildDetailRow('Status', (loanData['status'] ?? 'pending').toUpperCase()),
               _buildDetailRow('Application Date',
-                  DateFormat('yyyy-MM-dd').format(loanData['applicationDate'].toDate())),
+                  DateFormat('yyyy-MM-dd').format((loanData['applicationDate'] as Timestamp?)?.toDate() ?? DateTime.now())),
               const SizedBox(height: 16),
               const Text(
                 'Documents',
@@ -73,6 +82,22 @@ class _LoansPageState extends State<LoansPage> {
                   ),
                 ],
               ),
+              if (loanData['status'] == 'pending') ...[                
+                const SizedBox(height: 16),
+                const Text(
+                  'Admin Comment',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _commentController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter comment for approval/rejection',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
             ],
           ),
         ),
@@ -80,8 +105,39 @@ class _LoansPageState extends State<LoansPage> {
           if (loanData['status'] == 'pending')
             TextButton(
               onPressed: () async {
-                await _adminService.updateLoanStatus(loanData['id'], 'rejected');
-                if (mounted) Navigator.pop(context);
+                if (_commentController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please provide a comment for rejection')),
+                  );
+                  return;
+                }
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirm Rejection'),
+                    content: const Text('Are you sure you want to reject this loan application?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _adminService.updateLoanStatus(doc.id, 'rejected', comment: _commentController.text);
+                          await _notificationService.createNotification(
+                            title: 'Loan Application Rejected',
+                            message: 'Your loan application has been rejected. Reason: ${_commentController.text}',
+                            type: 'loan_status',
+                            userId: loanData['userId'],
+                          );
+                          if (mounted) Navigator.pop(context);
+                        },
+                        child: const Text('Reject', style: TextStyle(color: Colors.red)),
+                      ),
+                    ],
+                  ),
+                );
               },
               child: const Text(
                 'Reject',
@@ -91,8 +147,43 @@ class _LoansPageState extends State<LoansPage> {
           if (loanData['status'] == 'pending')
             FilledButton(
               onPressed: () async {
-                await _adminService.updateLoanStatus(loanData['id'], 'approved');
-                if (mounted) Navigator.pop(context);
+                if (_commentController.text.trim().isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Please provide a comment for approval')),
+                  );
+                  return;
+                }
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Confirm Approval'),
+                    content: const Text('Are you sure you want to approve this loan application?'),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('Cancel'),
+                      ),
+                      FilledButton(
+                        onPressed: () async {
+                          Navigator.pop(context);
+                          await _adminService.updateLoanStatus(doc.id, 'approved', comment: _commentController.text);
+                          await _notificationService.createNotification(
+                            title: 'Loan Application Approved',
+                            message: 'Congratulations! Your loan application has been approved. Note: ${_commentController.text}',
+                            type: 'loan_status',
+                            userId: loanData['userId'],
+                          );
+                          await _emailService.sendLoanApprovalEmail({
+                            ...loanData,
+                            'id': doc.id,
+                          });
+                          if (mounted) Navigator.pop(context);
+                        },
+                        child: const Text('Approve'),
+                      ),
+                    ],
+                  ),
+                );
               },
               child: const Text('Approve'),
             ),
@@ -135,39 +226,70 @@ class _LoansPageState extends State<LoansPage> {
             margin: const EdgeInsets.all(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search loans...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: 300,
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search loans...',
+                          prefixIcon: const Icon(Icons.search),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
                         ),
+                        onChanged: (value) {
+                          setState(() => _searchQuery = value);
+                        },
                       ),
+                    ),
+                    const SizedBox(width: 16),
+                    DropdownButton<String>(
+                      value: _selectedStatus,
+                      items: [
+                        const DropdownMenuItem(value: 'all', child: Text('All Status')),
+                        const DropdownMenuItem(value: 'pending', child: Text('Pending')),
+                        const DropdownMenuItem(value: 'approved', child: Text('Approved')),
+                        const DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
+                      ],
                       onChanged: (value) {
-                        setState(() => _searchQuery = value);
+                        if (value != null) {
+                          setState(() => _selectedStatus = value);
+                        }
                       },
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  DropdownButton<String>(
-                    value: _selectedStatus,
-                    items: [
-                      const DropdownMenuItem(value: 'all', child: Text('All Status')),
-                      const DropdownMenuItem(value: 'pending', child: Text('Pending')),
-                      const DropdownMenuItem(value: 'approved', child: Text('Approved')),
-                      const DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                    ],
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() => _selectedStatus = value);
-                      }
-                    },
-                  ),
-                ],
+                    const SizedBox(width: 16),
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _adminService.getLoansStream(),
+                      builder: (context, emailSnapshot) {
+                        return FilledButton.icon(
+                          onPressed: emailSnapshot.hasData ? () async {
+                            try {
+                              final loans = emailSnapshot.data?.docs.map((doc) => doc.data() as Map<String, dynamic>).toList() ?? [];
+                              await _emailService.sendLoanStatementEmail(loans);
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Loan statement sent successfully')),
+                                );
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Failed to send loan statement: $e')),
+                                );
+                              }
+                            }
+                          } : null,
+                          icon: const Icon(Icons.email),
+                          label: const Text('Get Loan Statement'),
+                        );
+                      },
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -189,10 +311,10 @@ class _LoansPageState extends State<LoansPage> {
                 }
 
                 final loans = snapshot.data?.docs ?? [];
-                final filteredLoans = loans.where((doc) {
+                final filteredLoans = loans.where((QueryDocumentSnapshot doc) {
                   final data = doc.data() as Map<String, dynamic>;
                   final matchesSearch = _searchQuery.isEmpty ||
-                      data['applicantName'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                      data['userEmail'].toString().toLowerCase().contains(_searchQuery.toLowerCase()) ||
                       data['purpose'].toString().toLowerCase().contains(_searchQuery.toLowerCase());
                   final matchesStatus = _selectedStatus == 'all' ||
                       data['status'] == _selectedStatus;
@@ -208,7 +330,7 @@ class _LoansPageState extends State<LoansPage> {
                         DataColumn(label: Text('Date')),
                         DataColumn(label: Text('Applicant')),
                         DataColumn(label: Text('Amount')),
-                        DataColumn(label: Text('Duration')),
+                        DataColumn(label: Text('Duration (Months)')),
                         DataColumn(label: Text('Status')),
                         DataColumn(label: Text('Actions')),
                       ],
@@ -220,9 +342,9 @@ class _LoansPageState extends State<LoansPage> {
                         return DataRow(
                           cells: [
                             DataCell(Text(DateFormat('yyyy-MM-dd').format(date))),
-                            DataCell(Text(data['applicantName'] ?? 'N/A')),
-                            DataCell(Text('KSH ${data['amount'].toStringAsFixed(2)}')),
-                            DataCell(Text('${data['duration']} months')),
+                            DataCell(Text(data['userEmail']?.toString() ?? 'N/A')),
+                            DataCell(Text('KSH ${(data['amount'] ?? 0.0).toStringAsFixed(2)}')),
+                            DataCell(Text('${data['tenure']?.toString() ?? '0'} months')),
                             DataCell(
                               Container(
                                 padding: const EdgeInsets.symmetric(
@@ -248,7 +370,7 @@ class _LoansPageState extends State<LoansPage> {
                                 children: [
                                   IconButton(
                                     icon: const Icon(Icons.visibility),
-                                    onPressed: () => _showLoanDetailsDialog(data),
+                                    onPressed: () => _showLoanDetailsDialog(doc),
                                   ),
                                   if (status == 'pending')
                                     IconButton(
@@ -256,7 +378,7 @@ class _LoansPageState extends State<LoansPage> {
                                       color: Colors.green,
                                       onPressed: () async {
                                         await _adminService.updateLoanStatus(
-                                            data['id'], 'approved');
+                                            doc.id, 'approved', comment: 'Approved via quick action');
                                       },
                                     ),
                                   if (status == 'pending')
@@ -265,7 +387,7 @@ class _LoansPageState extends State<LoansPage> {
                                       color: Colors.red,
                                       onPressed: () async {
                                         await _adminService.updateLoanStatus(
-                                            data['id'], 'rejected');
+                                            doc.id, 'rejected', comment: 'Rejected via quick action');
                                       },
                                     ),
                                 ],

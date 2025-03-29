@@ -48,7 +48,7 @@ class LoanService {
       final snapshot = await _db
           .collection('loans')
           .where('userId', isEqualTo: userId)
-          .where('status', isEqualTo: 'active')
+          .where('status', whereIn: ['active', 'pending', 'approved'])
           .orderBy('submittedAt', descending: true)
           .get();
 

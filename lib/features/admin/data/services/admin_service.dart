@@ -71,16 +71,46 @@ class AdminService {
   Stream<QuerySnapshot> getLoansStream() {
     return _db
         .collection('loans')
-        .orderBy('createdAt', descending: true)
+        .orderBy('submittedAt', descending: true)
         .snapshots();
   }
 
-  Future<void> updateLoanStatus(String loanId, String status) async {
+  Future<void> updateLoanStatus(String loanId, String status, {String? comment}) async {
     try {
-      await _db.collection('loans').doc(loanId).update({
+      // Get loan data first
+      final loanDoc = await _db.collection('loans').doc(loanId).get();
+      final loanData = loanDoc.data();
+      if (loanData == null) throw 'Loan not found';
+
+      final updateData = {
         'status': status,
         'lastUpdated': FieldValue.serverTimestamp(),
-      });
+      };
+      
+      if (comment != null && comment.isNotEmpty) {
+        updateData['adminComment'] = comment;
+      }
+
+      // Start a batch write
+      final batch = _db.batch();
+
+      // Update loan status
+      batch.update(_db.collection('loans').doc(loanId), updateData);
+
+      // If loan is approved, update user's balance
+      if (status == 'approved') {
+        final userId = loanData['userId'] as String;
+        final amount = loanData['amount'] as double;
+        
+        // Update user's balance
+        batch.update(_db.collection('users').doc(userId), {
+          'balance': FieldValue.increment(amount),
+          'lastUpdated': FieldValue.serverTimestamp(),
+        });
+      }
+
+      // Commit the batch
+      await batch.commit();
     } catch (e) {
       debugPrint('Error updating loan status: $e');
       rethrow;

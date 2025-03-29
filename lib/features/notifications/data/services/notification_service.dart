@@ -93,12 +93,20 @@ class NotificationService {
 
       if (userEmail == null) return;
 
+      // Check if SMTP credentials are configured
+      final smtpUsername = dotenv.env['SMTP_USERNAME'] ?? '';
+      final smtpPassword = dotenv.env['SMTP_PASSWORD'] ?? '';
+      
+      if (smtpUsername.isEmpty || smtpPassword.isEmpty) {
+        throw 'SMTP credentials not configured. Please check your .env file.';
+      }
+
       // Configure SMTP server
       final smtpServer = SmtpServer(
-        dotenv.env['SMTP_HOST'] ?? 'smtp.gmail.com',
+        dotenv.env['SMTP_HOST'] ?? 'smtp.mailersend.net',
         port: int.parse(dotenv.env['SMTP_PORT'] ?? '587'),
-        username: dotenv.env['SMTP_USERNAME'],
-        password: dotenv.env['SMTP_PASSWORD'],
+        username: smtpUsername,
+        password: smtpPassword,
         ssl: false,
         allowInsecure: true,
       );

@@ -55,3 +55,4 @@ key.properties
 .vscode/
 .idea/
 /ios/Runner/GoogleService-Info.plist
+.qodo

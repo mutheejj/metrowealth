@@ -4,6 +4,7 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/loans/data/services/loan_service.dart';
 import 'package:metrowealth/features/loans/presentation/pages/loan_application_page.dart';
 import 'package:metrowealth/features/loans/presentation/widgets/empty_loans_state.dart';
+import 'package:metrowealth/features/notifications/data/services/email_service.dart';
 
 class LoansPage extends StatefulWidget {
   const LoansPage({super.key});
@@ -15,6 +16,7 @@ class LoansPage extends StatefulWidget {
 class _LoansPageState extends State<LoansPage> {
   final _loanService = LoanService();
   final _auth = FirebaseAuth.instance;
+  final _emailService = EmailService();
   List<Map<String, dynamic>>? _loans;
   bool _isLoading = true;
 
@@ -55,86 +57,135 @@ class _LoansPageState extends State<LoansPage> {
           ? const Center(child: CircularProgressIndicator())
           : _loans == null || _loans!.isEmpty
               ? const EmptyLoansState()
-              : SingleChildScrollView(
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: const BoxDecoration(
-                color: Colors.red,
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(32),
-                  bottomRight: Radius.circular(32),
+              : Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: const BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'My Loans',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'View and manage your loans',
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.8),
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        try {
+                          await _emailService.sendLoanStatementEmail(_loans ?? []);
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Loan statement sent successfully')),
+                            );
+                          }
+                        } catch (e) {
+                          if (mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Failed to send loan statement: $e')),
+                            );
+                          }
+                        }
+                      },
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.red,
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        minimumSize: const Size(160, 45),
+                      ),
+                      icon: const Icon(Icons.email, size: 24),
+                      label: const Text('Get Statement', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ],
                 ),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Available Loan Products',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+              Expanded(
+                child: _loans == null || _loans!.isEmpty
+                    ? const Center(child: Text('No active loans'))
+                    : ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _loans!.length,
+                        itemBuilder: (context, index) {
+                          final loan = _loans![index];
+                          return Card(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Loan #${loan['id']}',
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 10,
+                                        ),
+                                      ),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: _getStatusColor(loan['status']).withOpacity(0.1),
+                                          borderRadius: BorderRadius.circular(4),
+                                        ),
+                                        child: Text(
+                                          loan['status'].toUpperCase(),
+                                          style: TextStyle(
+                                            color: _getStatusColor(loan['status']),
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 16),
+                                  _buildLoanDetail('Amount', 'KSH ${loan['amount'].toStringAsFixed(2)}'),
+                                  _buildLoanDetail('Monthly Payment', 'KSH ${loan['monthlyInstallment'].toStringAsFixed(2)}'),
+                                  _buildLoanDetail('Duration', '${loan['tenure']} months'),
+                                  _buildLoanDetail('Interest Rate', '${loan['interestRate']}%'),
+                                  _buildLoanDetail('Total Repayment', 'KSH ${loan['totalRepayment'].toStringAsFixed(2)}'),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Find the perfect loan for your needs',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildLoanCard(
-                    context,
-                    title: 'Personal Loan',
-                    description: 'Get up to KSH 50,000 for your personal needs',
-                    icon: Icons.person,
-                    features: [
-                      'Competitive interest rates from 8% p.a.',
-                      'Flexible repayment terms up to 5 years',
-                      'No collateral required',
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLoanCard(
-                    context,
-                    title: 'Business Loan',
-                    description: 'Grow your business with up to KSH 100,000',
-                    icon: Icons.business,
-                    features: [
-                      'Interest rates from 10% p.a.',
-                      'Repayment terms up to 7 years',
-                      'Business plan assessment support',
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  _buildLoanCard(
-                    context,
-                    title: 'Home Loan',
-                    description: 'Make your dream home a reality',
-                    icon: Icons.home,
-                    features: [
-                      'Interest rates from 6.5% p.a.',
-                      'Loan terms up to 30 years',
-                      'Free property valuation service',
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+                  ],
+                ),
+              );
   }
 
   Widget _buildLoanCard(
@@ -238,6 +289,54 @@ class _LoansPageState extends State<LoansPage> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Color _getStatusColor(String status) {
+    switch (status.toLowerCase()) {
+      case 'approved':
+        return Colors.green;
+      case 'pending':
+        return Colors.orange;
+      case 'rejected':
+        return Colors.red;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  Widget _buildLoanDetail(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            flex: 1,
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 14,
+              ),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            flex: 2,
+            child: Text(
+              value,
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 14,
+              ),
+              textAlign: TextAlign.right,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

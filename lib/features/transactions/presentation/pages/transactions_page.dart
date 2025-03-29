@@ -12,6 +12,8 @@ import 'package:metrowealth/features/transactions/data/models/transaction_model.
 import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 
+import '../../../../core/utils/icon_manager.dart';
+
 enum DateFilterType { all, day, week, month, year, custom }
 
 class TransactionsPage extends StatefulWidget {
@@ -547,10 +549,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
-                  IconData(
-                    int.parse('0x${category?.icon ?? "e5c3"}'),
-                    fontFamily: 'MaterialIcons',
-                  ),
+                  IconManager.getCategoryIcon(category?.icon ?? 'other'),
                   color: category?.color ?? Colors.blue,
                 ),
               ),
