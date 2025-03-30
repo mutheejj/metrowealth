@@ -8,6 +8,7 @@ import 'package:metrowealth/features/admin/presentation/pages/transactions_page.
 import 'package:metrowealth/features/admin/presentation/pages/loans_page.dart';
 import 'package:metrowealth/features/admin/presentation/pages/reports_page.dart';
 import 'package:metrowealth/features/admin/presentation/pages/settings_page.dart';
+import 'package:metrowealth/features/admin/presentation/pages/communications_page.dart';
 
 class AdminPanel extends StatefulWidget {
   const AdminPanel({super.key});
@@ -23,7 +24,8 @@ class _AdminPanelState extends State<AdminPanel> {
     'Users',
     'Transactions',
     'Loans',
-    'Reports'
+    'Reports',
+    'Communications'
   ];
 
   final AdminService _adminService = AdminService();
@@ -151,6 +153,16 @@ class _AdminPanelState extends State<AdminPanel> {
             ),
             const Divider(),
             ListTile(
+              selected: _selectedIndex == 5,
+              selectedColor: AppColors.primary,
+              leading: const Icon(Icons.email_outlined),
+              title: const Text('Communications'),
+              onTap: () {
+                setState(() => _selectedIndex = 5);
+                Navigator.pop(context);
+              },
+            ),
+            ListTile(
               leading: const Icon(Icons.settings),
               title: const Text('Settings'),
               onTap: () {
@@ -182,6 +194,8 @@ class _AdminPanelState extends State<AdminPanel> {
         return const LoansPage();
       case 4:
         return const ReportsPage();
+      case 5:
+        return const CommunicationsPage();
       default:
         return const Center(child: Text('Coming Soon'));
     }

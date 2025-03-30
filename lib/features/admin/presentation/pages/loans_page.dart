@@ -98,6 +98,21 @@ class _LoansPageState extends State<LoansPage> {
                   maxLines: 3,
                 ),
               ],
+              if (loanData['status'] == 'approved') ...[                
+                const SizedBox(height: 16),
+                ElevatedButton.icon(
+                  onPressed: () => _sendLoanReminder({
+                    ...loanData,
+                    'id': doc.id,
+                  }),
+                  icon: const Icon(Icons.notification_add),
+                  label: const Text('Send Payment Reminder'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -194,6 +209,32 @@ class _LoansPageState extends State<LoansPage> {
         ],
       ),
     );
+  }
+
+  Future<void> _sendLoanReminder(Map<String, dynamic> loanData) async {
+    try {
+      await _emailService.sendLoanReminder(
+        recipient: loanData['userEmail'],
+        loanId: loanData['id'],
+        amount: loanData['amount'],
+        dueDate: (loanData['dueDate'] as Timestamp).toDate(),
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Loan reminder sent successfully'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error sending reminder: $e')),
+        );
+      }
+    }
   }
 
   Widget _buildDetailRow(String label, String value) {
