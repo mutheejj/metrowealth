@@ -213,11 +213,15 @@ class _LoansPageState extends State<LoansPage> {
 
   Future<void> _sendLoanReminder(Map<String, dynamic> loanData) async {
     try {
+      if (loanData['userEmail'] == null) {
+        throw 'User email not found';
+      }
+      
       await _emailService.sendLoanReminder(
         recipient: loanData['userEmail'],
         loanId: loanData['id'],
-        amount: loanData['amount'],
-        dueDate: (loanData['dueDate'] as Timestamp).toDate(),
+        amount: loanData['amount'] ?? 0.0,
+        dueDate: (loanData['dueDate'] as Timestamp?)?.toDate() ?? DateTime.now(),
       );
 
       if (mounted) {

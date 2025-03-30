@@ -27,9 +27,16 @@ class _CommunicationsPageState extends State<CommunicationsPage> {
   }
 
   Future<void> _sendEmail() async {
-    if (!_formKey.currentState!.validate() || _selectedUsers.isEmpty) {
+    if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill all fields and select recipients')),
+        const SnackBar(content: Text('Please fill all fields')),
+      );
+      return;
+    }
+
+    if (_selectedUsers.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select at least one recipient')),
       );
       return;
     }
