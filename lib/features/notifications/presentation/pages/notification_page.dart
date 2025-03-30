@@ -1,9 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:metrowealth/features/notifications/data/services/notification_service.dart';
 
-class NotificationPage extends StatelessWidget {
+class NotificationPage extends StatefulWidget {
   const NotificationPage({Key? key}) : super(key: key);
+
+  @override
+  State<NotificationPage> createState() => _NotificationPageState();
+}
+
+class _NotificationPageState extends State<NotificationPage> {
+  final NotificationService _notificationService = NotificationService();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +28,7 @@ class NotificationPage extends StatelessWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Notification',
+          'Notifications',
           style: TextStyle(
             color: Colors.white,
             fontSize: 20,
@@ -27,8 +38,14 @@ class NotificationPage extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.check_circle_outline, color: Colors.white),
-            onPressed: () {
-              // Mark all as read
+            onPressed: () async {
+              try {
+                await _notificationService.markAllAsRead(_auth.currentUser!.uid);
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Error marking notifications as read: $e')),
+                );
+              }
             },
           ),
         ],
@@ -41,75 +58,75 @@ class NotificationPage extends StatelessWidget {
             top: Radius.circular(30),
           ),
         ),
-        child: ListView(
-          children: [
-            _buildDateSection(
-              'Today',
-              [
-                _buildNotificationItem(
-                  icon: Icons.notifications_active_outlined,
-                  color: Colors.green,
-                  title: 'Reminder!',
-                  message: 'Set up your automatic savings to meet your savings goal...',
-                  time: '17:00 - April 24',
-                ),
-                _buildNotificationItem(
-                  icon: Icons.system_update_outlined,
-                  color: Colors.green,
-                  title: 'New Update',
-                  message: 'Set up your automatic savings to meet your savings goal...',
-                  time: '17:00 - April 24',
-                ),
-              ],
-            ),
-            _buildDateSection(
-              'Yesterday',
-              [
-                _buildNotificationItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  color: Colors.blue,
-                  title: 'Transactions',
-                  message: 'A new transaction has been registered',
-                  subtitle: 'Groceries | Pantry | -KSH 100.00',
-                  time: '17:00 - April 24',
-                  showSubtitle: true,
-                ),
-                _buildNotificationItem(
-                  icon: Icons.notifications_active_outlined,
-                  color: Colors.green,
-                  title: 'Reminder!',
-                  message: 'Set up your automatic savings to meet your savings goal...',
-                  time: '17:00 - April 24',
-                ),
-              ],
-            ),
-            _buildDateSection(
-              'This Weekend',
-              [
-                _buildNotificationItem(
-                  icon: Icons.insert_chart_outlined,
-                  color: Colors.orange,
-                  title: 'Expense Record',
-                  message: 'We recommend that you be more attentive to your finances...',
-                  time: '17:00 - April 24',
-                ),
-                _buildNotificationItem(
-                  icon: Icons.account_balance_wallet_outlined,
-                  color: Colors.blue,
-                  title: 'Transactions',
-                  message: 'A new transaction has been registered',
-                  subtitle: 'Food | Dinner | -KSH 74.65',
-                  time: '17:00 - April 24',
-                  showSubtitle: true,
-                ),
-              ],
-            ),
-          ],
+        child: StreamBuilder<QuerySnapshot>(
+          stream: _notificationService.getUserNotifications(_auth.currentUser!.uid),
+          builder: (context, snapshot) {
+            if (snapshot.hasError) {
+              return Center(child: Text('Error: ${snapshot.error}'));
+            }
+
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
+
+            final notifications = snapshot.data?.docs ?? [];
+
+            if (notifications.isEmpty) {
+              return const Center(
+                child: Text('No notifications yet'),
+              );
+            }
+
+            return ListView.builder(
+              itemCount: notifications.length,
+              padding: const EdgeInsets.all(16),
+              itemBuilder: (context, index) {
+                final data = notifications[index].data() as Map<String, dynamic>;
+                final timestamp = (data['timestamp'] as Timestamp).toDate();
+                
+                return Card(
+                  elevation: 1,
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: ListTile(
+                    title: Text(
+                      data['title'] ?? '',
+                      style: TextStyle(
+                        fontWeight: data['isRead'] ? FontWeight.normal : FontWeight.bold,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(data['message'] ?? ''),
+                        const SizedBox(height: 4),
+                        Text(
+                          DateFormat.yMMMd().add_jm().format(timestamp),
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                    onTap: () async {
+                      try {
+                        await _notificationService.markAsRead(notifications[index].id);
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Error marking notification as read: $e')),
+                        );
+                      }
+                    },
+                  ),
+                );
+              },
+            );
+          },
         ),
-      ),
+    )
     );
   }
-
   Widget _buildDateSection(String date, List<Widget> notifications) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

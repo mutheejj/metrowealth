@@ -3,6 +3,7 @@ import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/core/services/database_service.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class SpendingInsights extends StatefulWidget {
   final String userId;
@@ -20,6 +21,7 @@ class _SpendingInsightsState extends State<SpendingInsights> {
   final DatabaseService _db = DatabaseService();
   bool _isLoading = true;
   Map<String, double> _categorySpending = {};
+  Map<String, String> _categoryNames = {};
   final _currencyFormat = NumberFormat.currency(
     symbol: 'KSH ',
     decimalDigits: 2,
@@ -44,15 +46,34 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       );
 
       final transactionSpending = <String, double>{};
+      final categoryNames = <String, String>{};
+      
       for (var transaction in transactions) {
         if (transaction.categoryId.isNotEmpty && transaction.type == 'expense') {
           transactionSpending[transaction.categoryId] = 
               (transactionSpending[transaction.categoryId] ?? 0) + transaction.amount;
+              
+          // Fetch category name if not already fetched
+          if (!categoryNames.containsKey(transaction.categoryId)) {
+            final categoryDoc = await FirebaseFirestore.instance
+                .collection('users')
+                .doc(widget.userId)
+                .collection('categories')
+                .doc(transaction.categoryId)
+                .get();
+            
+            if (categoryDoc.exists) {
+              categoryNames[transaction.categoryId] = categoryDoc.data()?['name'] ?? 'Unknown';
+            } else {
+              categoryNames[transaction.categoryId] = 'Unknown';
+            }
+          }
         }
       }
 
       setState(() {
         _categorySpending = transactionSpending;
+        _categoryNames = categoryNames;
         _isLoading = false;
       });
     } catch (e) {
@@ -127,9 +148,10 @@ class _SpendingInsightsState extends State<SpendingInsights> {
     return _categorySpending.entries.map((entry) {
       final index = _categorySpending.keys.toList().indexOf(entry.key);
       final percentage = (entry.value / total) * 100;
-      final displayName = entry.key.length > 10 
-          ? '${entry.key.substring(0, 8)}...' 
-          : entry.key;
+      final categoryName = _categoryNames[entry.key] ?? 'Unknown';
+      final displayName = categoryName.length > 10 
+          ? '${categoryName.substring(0, 8)}...' 
+          : categoryName;
 
       return PieChartSectionData(
         color: colors[index % colors.length],
@@ -176,7 +198,7 @@ class _SpendingInsightsState extends State<SpendingInsights> {
             const SizedBox(width: 12),
             Expanded(
               child: Text(
-                entry.key,
+                _categoryNames[entry.key] ?? 'Unknown',
                 style: const TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
