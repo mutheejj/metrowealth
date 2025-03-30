@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:intl/intl.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:metrowealth/features/home/presentation/pages/home_page.dart';
 import 'package:metrowealth/features/categories/presentation/pages/categories_page.dart';
 import 'package:metrowealth/features/profile/presentation/pages/profile_page.dart';
@@ -11,6 +12,8 @@ import 'package:metrowealth/features/transactions/data/repositories/transaction_
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
+import 'package:metrowealth/features/home/presentation/widgets/account_balance_card.dart';
+import 'package:metrowealth/features/auth/data/models/user_model.dart';
 
 import '../../../../core/utils/icon_manager.dart';
 
@@ -39,6 +42,8 @@ class _TransactionsPageState extends State<TransactionsPage> {
   DateFilterType _dateFilterType = DateFilterType.month;
   DateTime? _startDate;
   DateTime? _endDate;
+  late final Stream<DocumentSnapshot<Map<String, dynamic>>> _userStream;
+  UserModel? _user;
 
   @override
   void initState() {
@@ -46,6 +51,7 @@ class _TransactionsPageState extends State<TransactionsPage> {
     final userId = FirebaseAuth.instance.currentUser!.uid;
     _transactionRepository = TransactionRepository(userId);
     _categoryRepository = CategoryRepository(userId);
+    _userStream = FirebaseFirestore.instance.collection('users').doc(userId).snapshots();
     _initializeDateFilter();
     _loadData();
   }
@@ -92,7 +98,32 @@ class _TransactionsPageState extends State<TransactionsPage> {
         break;
       }
 
-      await _updateTotals();
+      // Subscribe to user document for real-time balance updates
+      _userStream.listen((snapshot) {
+        if (snapshot.exists && snapshot.data() != null) {
+          final data = snapshot.data()!;
+          setState(() {
+            _user = UserModel(
+              id: snapshot.id,
+              email: data['email'] ?? '',
+              fullName: data['fullName'],
+              balance: (data['balance'] ?? 0.0).toDouble(),
+              monthlyIncome: (data['monthlyIncome'] ?? 0.0).toDouble(),
+              monthlyExpenses: (data['monthlyExpenses'] ?? 0.0).toDouble(),
+              createdAt: data['createdAt'] != null 
+                  ? (data['createdAt'] as Timestamp).toDate()
+                  : DateTime.now(),
+            );
+          });
+          final userData = snapshot.data()!;
+          setState(() {
+            _totalBalance = (userData['totalBalance'] ?? 0.0).toDouble();
+            _totalIncome = (userData['statistics']?['totalIncome'] ?? 0.0).toDouble();
+            _totalExpenses = (userData['statistics']?['totalExpenses'] ?? 0.0).toDouble();
+            _isLoading = false;
+          });
+        }
+      });
     } catch (e) {
       print('Error loading data: $e');
       setState(() => _isLoading = false);
@@ -100,19 +131,18 @@ class _TransactionsPageState extends State<TransactionsPage> {
   }
 
   Future<void> _updateTotals() async {
-    _totalIncome = await _transactionRepository.getTotalIncome(
-      startDate: _startDate,
-      endDate: _endDate,
-    );
-    _totalExpenses = await _transactionRepository.getTotalExpenses(
-      startDate: _startDate,
-      endDate: _endDate,
-    );
-    
-    setState(() {
-      _totalBalance = _totalIncome - _totalExpenses;
-      _isLoading = false;
-    });
+    try {
+      _totalIncome = await _transactionRepository.getTotalIncome();
+      _totalExpenses = await _transactionRepository.getTotalExpenses();
+      
+      setState(() {
+        _totalBalance = _totalIncome - _totalExpenses;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error updating totals: $e');
+      setState(() => _isLoading = false);
+    }
   }
 
   void _showDateFilterDialog() {
@@ -201,7 +231,17 @@ class _TransactionsPageState extends State<TransactionsPage> {
     return Scaffold(
       backgroundColor: AppColors.primary,
       appBar: _buildAppBar(),
-      body: _buildBody(),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: AccountBalanceCard(user: _user),
+          ),
+          Expanded(
+            child: _buildBody(),
+          ),
+        ],
+      ),
       bottomNavigationBar: BottomNavBar(
         currentIndex: 3,
         onTap: _handleNavigation,
@@ -279,31 +319,6 @@ class _TransactionsPageState extends State<TransactionsPage> {
 
     return Column(
       children: [
-        // Total Balance Card
-        Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            children: [
-              const Text(
-                'Total Balance',
-                style: TextStyle(
-                  color: Colors.white70,
-                  fontSize: 16,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                _currencyFormat.format(_totalBalance),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-
         // Income/Expense Summary Cards
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16.0),
@@ -769,4 +784,43 @@ class _TransactionsPageState extends State<TransactionsPage> {
       MaterialPageRoute(builder: (_) => page),
     );
   }
+}
+
+Widget _buildBalanceItem(
+  String title,
+  String amount,
+  IconData icon,
+  Color iconColor,
+) {
+  return Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Icon(
+            icon,
+            color: iconColor,
+            size: 16,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              color: Colors.white70,
+              fontSize: 14,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 4),
+      Text(
+        amount,
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 18,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+    ],
+  );
 }

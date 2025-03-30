@@ -1,15 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
-import 'package:metrowealth/core/utils/icon_manager.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 import 'package:metrowealth/features/savings/presentation/pages/savings_goal_detail_page.dart';
 
 class SavingsGoalCard extends StatelessWidget {
   final SavingsGoalModel goal;
+  final VoidCallback? onContribute;
   late final NumberFormat currencyFormat;
 
-  SavingsGoalCard({super.key, required this.goal}) {
+  SavingsGoalCard({
+    super.key,
+    required this.goal,
+    this.onContribute,
+  }) {
     currencyFormat = NumberFormat.currency(symbol: 'KES ', decimalDigits: 2);
   }
 
@@ -22,18 +26,20 @@ class SavingsGoalCard extends StatelessWidget {
     return '$months months left';
   }
 
-  Color _getProgressColor(BuildContext context) {
-    final progress = goal.progressPercentage;
+  Color _getProgressColor(double progress) {
     if (progress >= 0.9) return Colors.green;
-    if (progress >= 0.6) return Theme.of(context).primaryColor;
+    if (progress >= 0.6) return Colors.blue;
     if (progress >= 0.3) return Colors.orange;
     return Colors.red;
   }
 
   @override
   Widget build(BuildContext context) {
+    final progress = goal.progressPercentage;
+    final progressColor = _getProgressColor(progress);
+
     return Card(
-      elevation: 2,
+      elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: InkWell(
         onTap: () => Navigator.push(
@@ -44,89 +50,113 @@ class SavingsGoalCard extends StatelessWidget {
         ),
         borderRadius: BorderRadius.circular(16),
         child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.primary.withOpacity(0.05),
-                AppColors.surface,
-              ],
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(
-                        IconManager.getCategoryIcon(goal.name),
-                        color: AppColors.primary,
-                        size: 24,
-                      ),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: progressColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            goal.title,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            _getRemainingTimeText(),
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
+                    child: Text(
+                      goal.icon,
+                      style: const TextStyle(fontSize: 24),
                     ),
-                  ],
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          goal.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          goal.category,
+                          style: Theme.of(context).textTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.add_circle_outline),
+                    onPressed: onContribute,
+                    tooltip: 'Add contribution',
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        currencyFormat.format(goal.currentAmount),
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      Text(
+                        'of ${currencyFormat.format(goal.targetAmount)}',
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '${(progress * 100).toStringAsFixed(1)}%',
+                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                              color: progressColor,
+                            ),
+                      ),
+                      Text(
+                        _getRemainingTimeText(),
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  backgroundColor: progressColor.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
+                  minHeight: 8,
                 ),
-                const SizedBox(height: 16),
-                LinearProgressIndicator(
-                  value: goal.progressPercentage,
-                  backgroundColor: AppColors.primary.withOpacity(0.1),
-                  valueColor: AlwaysStoppedAnimation<Color>(_getProgressColor(context)),
-                ),
+              ),
+              if (goal.isAutomatedSavingEnabled) ...[  
                 const SizedBox(height: 12),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      currencyFormat.format(goal.savedAmount),
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.primary,
-                      ),
+                    const Icon(
+                      Icons.auto_awesome,
+                      size: 16,
+                      color: Colors.amber,
                     ),
+                    const SizedBox(width: 4),
                     Text(
-                      currencyFormat.format(goal.targetAmount),
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey[600],
-                      ),
+                      'Auto-saving enabled',
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: Colors.amber,
+                          ),
                     ),
                   ],
                 ),
               ],
-            ),
+            ],
           ),
         ),
       ),
