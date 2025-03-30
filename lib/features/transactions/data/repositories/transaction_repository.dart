@@ -17,6 +17,11 @@ class TransactionRepository {
         _categoryRepository = CategoryRepository(userId);
 
   // Get all transactions for the current user
+  Stream<List<TransactionModel>> getTransactions() {
+    return getTransactionsStream();
+  }
+
+  // Get all transactions for the current user (legacy method)
   Stream<List<TransactionModel>> getTransactionsStream() {
     return _transactionsCollection
         .where('userId', isEqualTo: userId)
@@ -94,6 +99,8 @@ class TransactionRepository {
   // Add a new transaction
   Future<TransactionModel> addTransaction(TransactionModel transaction) async {
     try {
+      final batch = FirebaseFirestore.instance.batch();
+      
       // Create a new document reference
       final docRef = _transactionsCollection.doc();
       
@@ -108,16 +115,30 @@ class TransactionRepository {
       final transactionData = newTransaction.toMap();
       
       // Add the transaction
-      await docRef.set(transactionData);
+      batch.set(docRef, transactionData);
 
-      // Update category spent amount if it's an expense
+      // Update user's balance based on transaction type
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      
       if (transaction.type == TransactionType.expense) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(-transaction.amount),
+          'statistics.totalExpenses': FieldValue.increment(transaction.amount),
+        });
+        
+        // Update category spent amount
         await _categoryRepository.updateCategorySpentAmount(
           transaction.categoryId,
           transaction.amount,
         );
+      } else if (transaction.type == TransactionType.income) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(transaction.amount),
+          'statistics.totalIncome': FieldValue.increment(transaction.amount),
+        });
       }
       
+      await batch.commit();
       return newTransaction;
     } catch (e) {
       print('Error adding transaction: $e');
@@ -149,18 +170,41 @@ class TransactionRepository {
         updatedTransaction.toMap(),
       );
 
-      // Update category spent amounts if necessary
+      // Update user's balance based on transaction types
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      
+      // Revert old transaction's effect on balance
       if (oldTransaction.type == TransactionType.expense) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(oldTransaction.amount),
+          'statistics.totalExpenses': FieldValue.increment(-oldTransaction.amount),
+        });
         await _categoryRepository.updateCategorySpentAmount(
           oldTransaction.categoryId,
           -oldTransaction.amount,
         );
+      } else if (oldTransaction.type == TransactionType.income) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(-oldTransaction.amount),
+          'statistics.totalIncome': FieldValue.increment(-oldTransaction.amount),
+        });
       }
+
+      // Apply new transaction's effect on balance
       if (updatedTransaction.type == TransactionType.expense) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(-updatedTransaction.amount),
+          'statistics.totalExpenses': FieldValue.increment(updatedTransaction.amount),
+        });
         await _categoryRepository.updateCategorySpentAmount(
           updatedTransaction.categoryId,
           updatedTransaction.amount,
         );
+      } else if (updatedTransaction.type == TransactionType.income) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(updatedTransaction.amount),
+          'statistics.totalIncome': FieldValue.increment(updatedTransaction.amount),
+        });
       }
 
       await batch.commit();
@@ -183,12 +227,25 @@ class TransactionRepository {
       // Delete the transaction
       batch.delete(_transactionsCollection.doc(transaction.id));
 
-      // Update category spent amount if it's an expense
+      // Update user's balance based on transaction type
+      final userRef = FirebaseFirestore.instance.collection('users').doc(userId);
+      
       if (transaction.type == TransactionType.expense) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(transaction.amount),
+          'statistics.totalExpenses': FieldValue.increment(-transaction.amount),
+        });
+        
+        // Update category spent amount
         await _categoryRepository.updateCategorySpentAmount(
           transaction.categoryId,
           -transaction.amount,
         );
+      } else if (transaction.type == TransactionType.income) {
+        batch.update(userRef, {
+          'totalBalance': FieldValue.increment(-transaction.amount),
+          'statistics.totalIncome': FieldValue.increment(-transaction.amount),
+        });
       }
 
       await batch.commit();
@@ -249,28 +306,35 @@ class TransactionRepository {
     DateTime? startDate,
     DateTime? endDate,
   }) async {
-    var query = _transactionsCollection
-        .where('userId', isEqualTo: userId)
-        .where('type', isEqualTo: TransactionType.expense.toString().split('.').last);
+    try {
+      var query = _transactionsCollection
+          .where('userId', isEqualTo: userId)
+          .where('type', isEqualTo: TransactionType.expense.toString().split('.').last);
 
-    if (startDate != null) {
-      query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+      if (startDate != null) {
+        query = query.where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate));
+      }
+      if (endDate != null) {
+        query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+      }
+
+      final snapshot = await query.get();
+      final spending = <String, double>{};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final categoryId = data['categoryId'] as String? ?? '';
+        if (categoryId.isNotEmpty) {
+          final amount = (data['amount'] as num? ?? 0.0).toDouble();
+          spending[categoryId] = (spending[categoryId] ?? 0.0) + amount;
+        }
+      }
+
+      return spending;
+    } catch (e) {
+      print('Error getting spending by category: $e');
+      return {};
     }
-    if (endDate != null) {
-      query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
-    }
-
-    final snapshot = await query.get();
-    final spending = <String, double>{};
-
-    for (var doc in snapshot.docs) {
-      final data = doc.data();
-      final categoryId = data['categoryId'] as String? ?? '';
-      final amount = (data['amount'] as num? ?? 0.0).toDouble();
-      spending[categoryId] = (spending[categoryId] ?? 0.0) + amount;
-    }
-
-    return spending;
   }
 
   // Get recurring transactions
@@ -291,4 +355,4 @@ class TransactionRepository {
       }).toList();
     });
   }
-} 
+}
