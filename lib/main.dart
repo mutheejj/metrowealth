@@ -19,8 +19,7 @@ void main() async {
   // Initialize Firebase
   await FirebaseService.initialize();
   
-  // Sign out any existing session on app start
-  await FirebaseAuth.instance.signOut();
+  // Keep existing session on app start
   
   runApp(const MyApp());
 }

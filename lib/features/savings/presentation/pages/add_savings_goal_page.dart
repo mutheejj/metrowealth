@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 import 'package:metrowealth/features/savings/data/services/database_service.dart';
@@ -86,7 +87,7 @@ class _AddSavingsGoalPageState extends State<AddSavingsGoalPage> {
     try {
       final goal = SavingsGoalModel(
         id: const Uuid().v4(),
-        userId: 'current_user_id', // Replace with actual user ID
+        userId: FirebaseAuth.instance.currentUser?.uid ?? '',
         title: _titleController.text,
         description: _descriptionController.text,
         category: _selectedCategory,

@@ -6,6 +6,7 @@ import 'package:mailer/smtp_server.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'dart:convert';
 import 'package:intl/intl.dart';
+import 'package:metrowealth/features/savings/data/models/savings_goal_model.dart';
 
 
 class EmailService {
@@ -179,6 +180,108 @@ class EmailService {
         'userId': _auth.currentUser?.uid,
         'userEmail': _auth.currentUser?.email,
         'type': 'loan_approval',
+        'error': e.toString(),
+        'sentAt': FieldValue.serverTimestamp(),
+        'status': 'failed',
+      });
+      rethrow;
+    }
+  }
+
+  Future<void> sendSavingsStatementEmail(List<SavingsGoalModel> goals) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) throw 'User not authenticated';
+      if (user.email == null) throw 'User email not found';
+
+      // Check if SMTP credentials are configured
+      if (_smtpUsername.isEmpty || _smtpPassword.isEmpty) {
+        throw 'SMTP credentials not configured. Please check your .env file.';
+      }
+
+      final smtpServer = SmtpServer(
+        _smtpHost,
+        port: _smtpPort,
+        username: _smtpUsername,
+        password: _smtpPassword,
+        allowInsecure: false,
+        ssl: false,
+        ignoreBadCertificate: false
+      );
+
+      if (goals.isEmpty) {
+        throw 'No savings goals available for statement';
+      }
+
+      final goalsHtml = goals.map((goal) => '''
+        <tr style="background-color: #ffffff;">
+          <td style="padding: 12px; border: 1px solid #dee2e6;">${const HtmlEscape().convert(goal.title)}</td>
+          <td style="padding: 12px; border: 1px solid #dee2e6;">KSH ${const HtmlEscape().convert(goal.targetAmount.toString())}</td>
+          <td style="padding: 12px; border: 1px solid #dee2e6;">KSH ${const HtmlEscape().convert(goal.currentAmount.toString())}</td>
+          <td style="padding: 12px; border: 1px solid #dee2e6;">${((goal.currentAmount / goal.targetAmount) * 100).toStringAsFixed(1)}%</td>
+          <td style="padding: 12px; border: 1px solid #dee2e6;">${DateFormat('yyyy-MM-dd').format(goal.createdAt)}</td>
+        </tr>
+      ''').join('');
+
+      final message = Message()
+        ..from = Address(_fromEmail, _fromName)
+        ..recipients.add(Address(user.email!, user.displayName ?? 'Valued Customer'))
+        ..subject = 'Savings Goals Statement'
+        ..headers = {
+          'Content-Type': 'text/html; charset=UTF-8',
+          'X-Mailer': 'MetroWealth App',
+        }
+        ..text = 'Please view this email in an HTML-compatible client to see your full savings statement.\n\nSavings goals count: ${goals.length}\nGenerated on: ${DateFormat('yyyy-MM-dd').format(DateTime.now())}'
+        ..html = '''
+          <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px;">
+            <h2 style="color: #333; text-align: center;">Savings Goals Statement</h2>
+            <p>Dear ${user.displayName ?? 'Valued Customer'},</p>
+            <p>Here is your savings goals statement as of ${DateFormat('yyyy-MM-dd').format(DateTime.now())}:</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px; margin-bottom: 20px;">
+              <tr style="background-color: #f8f9fa;">
+                <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left;">Goal Title</th>
+                <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left;">Target Amount</th>
+                <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left;">Current Amount</th>
+                <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left;">Progress</th>
+                <th style="padding: 12px; border: 1px solid #dee2e6; text-align: left;">Created Date</th>
+              </tr>
+              $goalsHtml
+            </table>
+            <p style="color: #666;">If you have any questions about your savings statement, please don't hesitate to contact our support team.</p>
+            <p style="margin-top: 30px;">Best regards,<br>MetroWealth Team</p>
+          </div>
+        ''';
+
+      try {
+        final sendReport = await send(message, smtpServer);
+        if (sendReport == null || sendReport.toString().isEmpty) {
+          throw 'Failed to get send report from SMTP server';
+        }
+      } catch (e) {
+        if (e.toString().contains('authentication failed')) {
+          throw 'SMTP authentication failed. Please check your credentials.';
+        } else if (e.toString().contains('connection refused')) {
+          throw 'Failed to connect to SMTP server. Please check your network connection.';
+        } else {
+          throw 'Failed to send email: ${e.toString()}';
+        }
+      }
+
+      // Log email sent in Firestore
+      await _db.collection('email_logs').add({
+        'userId': user.uid,
+        'userEmail': user.email,
+        'type': 'savings_statement',
+        'sentAt': FieldValue.serverTimestamp(),
+        'status': 'sent',
+      });
+
+    } catch (e) {
+      debugPrint('Error sending savings statement email: $e');
+      await _db.collection('email_logs').add({
+        'userId': _auth.currentUser?.uid,
+        'userEmail': _auth.currentUser?.email,
+        'type': 'savings_statement',
         'error': e.toString(),
         'sentAt': FieldValue.serverTimestamp(),
         'status': 'failed',
