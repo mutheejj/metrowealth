@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/features/transactions/data/repositories/transaction_repository.dart';
+import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:metrowealth/features/analysis/presentation/pages/spending_insights_page.dart';
 
 class SpendingInsights extends StatefulWidget {
   final String userId;
@@ -57,10 +59,23 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       final startOfMonth = DateTime(now.year, now.month, 1);
       final endOfMonth = DateTime(now.year, now.month + 1, 0);
 
-      final categorySpending = await _transactionRepository.getSpendingByCategory(
-        startDate: startOfMonth,
-        endDate: endOfMonth,
-      );
+      // Get all expense transactions for the current month
+      final transactionsList = await _transactionRepository
+          .getTransactionsByDateRange(startOfMonth, endOfMonth)
+          .first;
+      
+      final transactions = transactionsList
+          .where((transaction) => transaction.type == TransactionType.expense)
+          .toList();
+
+      // Aggregate spending by category
+      final categorySpending = <String, double>{};
+      for (final transaction in transactions) {
+        final categoryId = transaction.categoryId;
+        if (categoryId.isNotEmpty) {
+          categorySpending[categoryId] = (categorySpending[categoryId] ?? 0.0) + transaction.amount;
+        }
+      }
 
       if (!mounted) return;
 
@@ -123,63 +138,73 @@ class _SpendingInsightsState extends State<SpendingInsights> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 10,
-            offset: const Offset(0, 2),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => SpendingInsightsPage(userId: widget.userId),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Spending Insights',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 2),
             ),
-          ),
-          const SizedBox(height: 24),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_categorySpending.isEmpty)
-            const Center(
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 32),
-                child: Text(
-                  'No spending data available for this month',
-                  style: TextStyle(fontSize: 16, color: Colors.grey),
-                ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Spending Insights',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
-            )
-          else
-            Column(
-              children: [
-                AspectRatio(
-                  aspectRatio: 1.3,
-                  child: PieChart(
-                    PieChartData(
-                      sections: _buildPieChartSections(),
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 40,
-                      startDegreeOffset: -90,
-                    ),
+            ),
+            const SizedBox(height: 24),
+            if (_isLoading)
+              const Center(child: CircularProgressIndicator())
+            else if (_categorySpending.isEmpty)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Text(
+                    'No spending data available for this month',
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
                   ),
                 ),
-                const SizedBox(height: 32),
-                Column(
-                  children: _buildLegendItems(),
-                ),
-              ],
-            ),
-        ],
+              )
+            else
+              Column(
+                children: [
+                  AspectRatio(
+                    aspectRatio: 1.3,
+                    child: PieChart(
+                      PieChartData(
+                        sections: _buildPieChartSections(),
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 40,
+                        startDegreeOffset: -90,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  Column(
+                    children: _buildLegendItems(),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
