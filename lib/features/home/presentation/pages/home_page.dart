@@ -18,7 +18,7 @@ import 'package:metrowealth/features/home/presentation/widgets/quick_actions.dar
 import 'package:metrowealth/features/home/presentation/widgets/recent_transactions.dart';
 import 'package:metrowealth/features/home/presentation/widgets/spending_insights.dart';
 import 'package:metrowealth/features/home/presentation/widgets/budget_overview.dart';
-import 'package:metrowealth/features/home/presentation/widgets/savings_goals_progress.dart';
+import 'package:metrowealth/features/home/presentation/widgets/savings_goals_overview.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
 
@@ -164,7 +164,7 @@ class _HomePageState extends State<HomePage> {
                           const SizedBox(height: 20),
                           BudgetOverview(userId: _user!.id),
                           const SizedBox(height: 20),
-                          SavingsGoalsProgress(userId: _user!.id),
+                          SavingsGoalsOverview(userId: _user!.id),
                           const SizedBox(height: 20),
                           RecentTransactions(userId: _user!.id),
                         ],

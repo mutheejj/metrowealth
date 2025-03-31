@@ -318,6 +318,9 @@ class TransactionRepository {
         query = query.where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
       }
 
+      // Add orderBy to match the composite index
+      query = query.orderBy('date', descending: true);
+
       final snapshot = await query.get();
       final spending = <String, double>{};
 

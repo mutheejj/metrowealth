@@ -38,6 +38,12 @@ class _SpendingInsightsState extends State<SpendingInsights> {
       if (mounted) {
         _loadSpendingData();
       }
+    }, onError: (error) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     });
   }
 
@@ -56,11 +62,16 @@ class _SpendingInsightsState extends State<SpendingInsights> {
         endDate: endOfMonth,
       );
 
+      if (!mounted) return;
+
+      // Remove any empty or zero-amount categories
+      categorySpending.removeWhere((key, value) => key.isEmpty || value <= 0);
+
       final categoryNames = <String, String>{};
       
-      // Fetch category names
-      for (var categoryId in categorySpending.keys) {
-        if (categoryId.isNotEmpty) {
+      // Fetch category names in parallel for better performance
+      if (categorySpending.isNotEmpty) {
+        final futures = categorySpending.keys.map((categoryId) async {
           try {
             final categoryDoc = await FirebaseFirestore.instance
                 .collection('users')
@@ -69,14 +80,20 @@ class _SpendingInsightsState extends State<SpendingInsights> {
                 .doc(categoryId)
                 .get();
             
-            categoryNames[categoryId] = categoryDoc.exists
-                ? (categoryDoc.data() as Map<String, dynamic>)['name'] ?? 'Unknown'
-                : 'Unknown';
+            return MapEntry(
+              categoryId,
+              categoryDoc.exists
+                  ? (categoryDoc.data() as Map<String, dynamic>)['name']?.toString() ?? 'Unknown'
+                  : 'Unknown'
+            );
           } catch (e) {
             print('Error fetching category name: $e');
-            categoryNames[categoryId] = 'Unknown';
+            return MapEntry(categoryId, 'Unknown');
           }
-        }
+        });
+
+        final results = await Future.wait(futures);
+        categoryNames.addEntries(results);
       }
 
       if (!mounted) return;
@@ -86,41 +103,26 @@ class _SpendingInsightsState extends State<SpendingInsights> {
         _categoryNames = categoryNames;
         _isLoading = false;
       });
+
+      print('Loaded spending data: ${categorySpending.length} categories');
+      categorySpending.forEach((key, value) {
+        print('Category: ${categoryNames[key]}, Amount: $value');
+      });
+
     } catch (e) {
-      setState(() => _isLoading = false);
-      // Show error
+      print('Error loading spending data: $e');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _categorySpending = {};
+          _categoryNames = {};
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_categorySpending.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: const Center(
-          child: Text(
-            'No spending data available for this month',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -145,21 +147,38 @@ class _SpendingInsightsState extends State<SpendingInsights> {
             ),
           ),
           const SizedBox(height: 24),
-          AspectRatio(
-            aspectRatio: 1.3,
-            child: PieChart(
-              PieChartData(
-                sections: _buildPieChartSections(),
-                sectionsSpace: 2,
-                centerSpaceRadius: 40,
-                startDegreeOffset: -90,
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator())
+          else if (_categorySpending.isEmpty)
+            const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 32),
+                child: Text(
+                  'No spending data available for this month',
+                  style: TextStyle(fontSize: 16, color: Colors.grey),
+                ),
               ),
+            )
+          else
+            Column(
+              children: [
+                AspectRatio(
+                  aspectRatio: 1.3,
+                  child: PieChart(
+                    PieChartData(
+                      sections: _buildPieChartSections(),
+                      sectionsSpace: 2,
+                      centerSpaceRadius: 40,
+                      startDegreeOffset: -90,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Column(
+                  children: _buildLegendItems(),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 32),
-          Column(
-            children: _buildLegendItems(),
-          ),
         ],
       ),
     );
@@ -190,13 +209,14 @@ class _SpendingInsightsState extends State<SpendingInsights> {
         color: colors[index % colors.length],
         value: entry.value,
         title: '$displayName\n${percentage.toStringAsFixed(1)}%',
-        radius: 100,
+        radius: 60,
         titleStyle: const TextStyle(
           color: Colors.white,
-          fontSize: 12,
+          fontSize: 10,
           fontWeight: FontWeight.bold,
         ),
-        titlePositionPercentageOffset: 0.6,
+        titlePositionPercentageOffset: 0.55,
+        showTitle: percentage >= 5, // Only show title if segment is large enough
       );
     }).toList();
   }
