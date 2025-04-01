@@ -412,7 +412,7 @@ class EmailService {
           <td style="padding: 12px; border: 1px solid #dee2e6;">KSH ${loan['monthlyInstallment'].toStringAsFixed(2)}</td>
           <td style="padding: 12px; border: 1px solid #dee2e6;">${loan['tenure']} months</td>
           <td style="padding: 12px; border: 1px solid #dee2e6;">${loan['status']}</td>
-          <td style="padding: 12px; border: 1px solid #dee2e6;">${DateFormat('yyyy-MM-dd').format(loan['dueDate'].toDate())}</td>
+          <td style="padding: 12px; border: 1px solid #dee2e6;">${loan['dueDate'] != null ? DateFormat('yyyy-MM-dd').format(loan['dueDate'].toDate()) : 'N/A'}</td>
         </tr>
       ''').join('');
 

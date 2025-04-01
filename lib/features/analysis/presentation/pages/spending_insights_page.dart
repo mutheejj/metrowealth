@@ -29,7 +29,11 @@ class _SpendingInsightsPageState extends State<SpendingInsightsPage> {
     super.initState();
     _transactionRepository = TransactionRepository(widget.userId);
     _categoryRepository = CategoryRepository(widget.userId);
-    _loadData();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadData();
+      }
+    });
   }
 
   Future<void> _loadData() async {
@@ -49,9 +53,16 @@ class _SpendingInsightsPageState extends State<SpendingInsightsPage> {
         _totalSpending = spending.values.fold(0, (sum, amount) => sum + amount);
       });
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading spending data: $e')),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading spending data: $e')),
+        );
+      }
+      setState(() {
+        _categorySpending = {};
+        _categories = {};
+        _totalSpending = 0;
+      });
     }
   }
 
@@ -68,6 +79,7 @@ class _SpendingInsightsPageState extends State<SpendingInsightsPage> {
             title: percentage >= 5 ? '${percentage.toStringAsFixed(1)}%' : '',
             radius: 60,
             titleStyle: const TextStyle(color: Colors.white, fontSize: 12),
+            borderSide: BorderSide(color: Colors.white.withOpacity(0.5), width: 2),
           ),
         );
       }

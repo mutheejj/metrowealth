@@ -9,6 +9,8 @@ class TransactionRepository {
 
   TransactionRepository(this.userId) 
       : _transactionsCollection = FirebaseFirestore.instance
+            .collection('users')
+            .doc(userId)
             .collection('transactions')
             .withConverter<Map<String, dynamic>>(
               fromFirestore: (snapshot, _) => snapshot.data() ?? {},

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:metrowealth/core/constants/app_colors.dart';
 import 'package:metrowealth/core/services/database_service.dart';
+import 'package:metrowealth/features/admin/presentation/pages/transactions_page.dart';
 import 'package:metrowealth/features/transactions/data/models/transaction_model.dart';
 import 'package:intl/intl.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
@@ -66,7 +67,9 @@ class _RecentTransactionsState extends State<RecentTransactions> {
             ),
             TextButton(
               onPressed: () {
-                // Navigate to transactions page
+                Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const TransactionsPage()));
               },
               child: const Text('See All'),
             ),
