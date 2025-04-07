@@ -59,18 +59,16 @@ class _SignupPageState extends State<SignupPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Account created successfully! Please complete your driver registration.'),
+            content: Text('Account created successfully!'),
             backgroundColor: Colors.green,
           ),
         );
-        
-        await Future.delayed(const Duration(seconds: 1));
         
         if (mounted) {
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
-              builder: (context) => DriverRegistrationPage(userId: userCredential.user!.uid),
+              builder: (context) => const HomePage(),
             ),
           );
         }

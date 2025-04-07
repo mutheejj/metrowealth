@@ -162,19 +162,6 @@ class _AdminPanelState extends State<AdminPanel> {
                 Navigator.pop(context);
               },
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const AdminSettingsPage(),
-                  ),
-                );
-              },
-            ),
           ],
         ),
       ),

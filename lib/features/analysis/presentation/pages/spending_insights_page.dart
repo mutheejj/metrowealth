@@ -168,7 +168,7 @@ class _SpendingInsightsPageState extends State<SpendingInsightsPage> {
                     leading: CircleAvatar(
                       backgroundColor: category.color,
                       child: Icon(
-                        IconData(int.parse(category.icon), fontFamily: 'MaterialIcons'),
+                        Icons.category,  // Using a constant IconData instead of parsing
                         color: Colors.white,
                       ),
                     ),
