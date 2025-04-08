@@ -79,4 +79,4 @@ Follow these steps to get the MetroWealth project running on your local machine.
 
 ---
 
-This README provides a good starting point for understanding and setting up the MetroWealth project.
+
