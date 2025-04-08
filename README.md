@@ -38,7 +38,7 @@ Follow these steps to get the MetroWealth project running on your local machine.
 
 1.  **Clone the repository:**
     ```bash
-    git clone <your-repository-url>
+    git clone https://github.com/mutheejj/metrowealth
     cd metrowealth
     ```
 
