@@ -499,38 +499,57 @@ class EmailService {
         ignoreBadCertificate: false
       );
 
-      final message = Message()
-        ..from = Address(_fromEmail, _fromName)
-        ..bccRecipients.addAll(recipients)
-        ..subject = subject
-        ..headers = {
-          'Content-Type': 'text/html; charset=UTF-8',
-          'X-Mailer': 'MetroWealth App',
-        }
-        ..html = htmlContent;
+      int successCount = 0;
+      List<String> failedRecipients = [];
 
-      try {
-        final sendReport = await send(message, smtpServer);
-        if (sendReport == null || sendReport.toString().isEmpty) {
-          throw 'Failed to get send report from SMTP server';
-        }
-      } catch (e) {
-        if (e.toString().contains('authentication failed')) {
-          throw 'SMTP authentication failed. Please check your credentials.';
-        } else if (e.toString().contains('connection refused')) {
-          throw 'Failed to connect to SMTP server. Please check your network connection.';
-        } else {
-          throw 'Failed to send email: ${e.toString()}';
+      // Send emails one at a time
+      for (final recipient in recipients) {
+        final message = Message()
+          ..from = Address(_fromEmail, _fromName)
+          ..recipients.add(recipient) // Send to one recipient at a time
+          ..subject = subject
+          ..headers = {
+            'Content-Type': 'text/html; charset=UTF-8',
+            'X-Mailer': 'MetroWealth App',
+          }
+          ..html = htmlContent;
+
+        try {
+          final sendReport = await send(message, smtpServer);
+          if (sendReport == null || sendReport.toString().isEmpty) {
+            throw 'Failed to get send report from SMTP server';
+          }
+          successCount++;
+          
+          // Add a small delay between emails to avoid rate limiting
+          await Future.delayed(const Duration(milliseconds: 500));
+        } catch (e) {
+          debugPrint('Failed to send email to $recipient: $e');
+          failedRecipients.add(recipient);
+          
+          if (e.toString().contains('authentication failed')) {
+            throw 'SMTP authentication failed. Please check your credentials.';
+          } else if (e.toString().contains('connection refused')) {
+            throw 'Failed to connect to SMTP server. Please check your network connection.';
+          }
+          // Continue sending to other recipients even if one fails
+          continue;
         }
       }
 
       await _db.collection('email_logs').add({
         'type': 'bulk_email',
-        'recipientCount': recipients.length,
+        'totalRecipients': recipients.length,
+        'successfulSent': successCount,
+        'failedRecipients': failedRecipients,
         'subject': subject,
         'sentAt': FieldValue.serverTimestamp(),
-        'status': 'sent',
+        'status': successCount == recipients.length ? 'sent' : 'partial_success',
       });
+
+      if (failedRecipients.isNotEmpty) {
+        throw 'Failed to send email to some recipients: ${failedRecipients.join(", ")}';
+      }
 
     } catch (e) {
       debugPrint('Error sending bulk email: $e');
