@@ -86,7 +86,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 ```text
 MIT License
 
-Copyright (c) [Year] [Your Name/Organization]
+Copyright (c) 2025] john muthee maina
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -114,7 +114,7 @@ _(Note: Remember to create a `LICENSE` file in your repository root and update t
 We appreciate your feedback! If you encounter any bugs, have feature suggestions, or want to contribute, please feel free to:
 
 *   **Leave a Review:** If you find MetroWealth helpful, consider giving the repository a star ⭐!
-*   **Raise an Issue:** Report bugs or suggest features by opening an issue on the [GitHub Issues page](<your-repository-url>/issues).
+*   **Raise an Issue:** Report bugs or suggest features by opening an issue on the [GitHub Issues page](https://github.com/mutheejj/metrowealth/issues).
 *   **Contribute:** Pull requests are welcome. Please open an issue first to discuss what you would like to change.
 
 
