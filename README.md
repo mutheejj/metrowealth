@@ -79,4 +79,42 @@ Follow these steps to get the MetroWealth project running on your local machine.
 
 ---
 
+## 📜 License
+
+This project is licensed under the MIT License. See the `LICENSE` file for details.
+
+```text
+MIT License
+
+Copyright (c) [Year] [Your Name/Organization]
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+_(Note: Remember to create a `LICENSE` file in your repository root and update the copyright holder information above if you choose to use the MIT license)._
+
+## ⭐ Feedback & Issues
+
+We appreciate your feedback! If you encounter any bugs, have feature suggestions, or want to contribute, please feel free to:
+
+*   **Leave a Review:** If you find MetroWealth helpful, consider giving the repository a star ⭐!
+*   **Raise an Issue:** Report bugs or suggest features by opening an issue on the [GitHub Issues page](<your-repository-url>/issues).
+*   **Contribute:** Pull requests are welcome. Please open an issue first to discuss what you would like to change.
+
 This README provides a good starting point for understanding and setting up the MetroWealth project.
