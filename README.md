@@ -107,7 +107,6 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
 
-_(Note: Remember to create a `LICENSE` file in your repository root and update the copyright holder information above if you choose to use the MIT license)._
 
 ## ⭐ Feedback & Issues
 
