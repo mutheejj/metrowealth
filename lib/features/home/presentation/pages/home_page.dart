@@ -21,6 +21,9 @@ import 'package:metrowealth/features/home/presentation/widgets/budget_overview.d
 import 'package:metrowealth/features/home/presentation/widgets/savings_goals_overview.dart';
 import 'package:metrowealth/features/categories/data/models/category_model.dart';
 import 'package:metrowealth/features/categories/data/repositories/category_repository.dart';
+import 'package:metrowealth/core/utils/responsive_helper.dart';
+import 'package:metrowealth/core/widgets/responsive_layout.dart';
+import 'package:metrowealth/core/widgets/responsive_scaffold.dart';
 
 // Move enum to top level, outside of any class
 enum AnalysisPeriod { daily, weekly, monthly }
@@ -95,92 +98,188 @@ class _HomePageState extends State<HomePage> {
   }
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[100],
-      body: _isLoading 
-        ? const Center(child: CircularProgressIndicator())
-        : RefreshIndicator(
-            onRefresh: _loadUserData,
-            child: CustomScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              slivers: [
-                SliverAppBar(
-                  backgroundColor: AppColors.primary,
-                  elevation: 0,
-                  pinned: true,
-                  expandedHeight: 120,
-                  automaticallyImplyLeading: false,
-                  flexibleSpace: FlexibleSpaceBar(
-                    background: Container(
-                      color: AppColors.primary,
-                      padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+    final isWeb = !ResponsiveHelper.isMobile(context);
+    
+    final appBar = SliverAppBar(
+      backgroundColor: AppColors.primary,
+      elevation: 0,
+      pinned: true,
+      expandedHeight: 120,
+      automaticallyImplyLeading: !isWeb, // Don't show back button on web
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          color: AppColors.primary,
+          padding: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (_user != null) ...[                            
+                Text(
+                  'Welcome back,',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  _user!.fullName ?? 'User',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const NotificationPage()),
+          ),
+        ),
+      ],
+    );
+
+    // For mobile devices, we'll use the existing layout
+    final mobileLayout = _isLoading 
+      ? const Center(child: CircularProgressIndicator())
+      : RefreshIndicator(
+          onRefresh: _loadUserData,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              appBar,
+              if (_user != null) ...[                  
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        AccountBalanceCard(user: _user!),
+                        const SizedBox(height: 20),
+                        QuickActions(onActionSelected: _handleQuickAction, userId: _user!.id),
+                        const SizedBox(height: 20),
+                        SpendingInsights(userId: _user!.id),
+                        const SizedBox(height: 20),
+                        BudgetOverview(userId: _user!.id),
+                        const SizedBox(height: 20),
+                        SavingsGoalsOverview(userId: _user!.id),
+                        const SizedBox(height: 20),
+                        RecentTransactions(userId: _user!.id),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ],
+          ),
+        );
+
+    // For web, we'll create a responsive layout with sections
+    final webLayout = _isLoading 
+      ? const Center(child: CircularProgressIndicator())
+      : RefreshIndicator(
+          onRefresh: _loadUserData,
+          child: CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              if (!isWeb) appBar,
+              if (_user != null) ...[                  
+                SliverToBoxAdapter(
+                  child: ResponsiveContainer(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
                       child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          if (_user != null) ...[                            
-                            Text(
-                              'Welcome back,',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                              ),
-                            ),
-                            Text(
-                              _user!.fullName ?? 'User',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 24,
+                          if (isWeb) ...[
+                            const Text(
+                              'Dashboard',
+                              style: TextStyle(
+                                fontSize: 28,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
+                            const SizedBox(height: 24),
                           ],
+                          // Main content area for web - using 2-column layout
+                          // First row - Balance and Quick Actions
+                          ResponsiveRow(
+                            children: [
+                              AccountBalanceCard(user: _user!),
+                              QuickActions(onActionSelected: _handleQuickAction, userId: _user!.id),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Second row - Insights and Budget
+                          ResponsiveRow(
+                            children: [
+                              SpendingInsights(userId: _user!.id),
+                              BudgetOverview(userId: _user!.id),
+                            ],
+                          ),
+                          const SizedBox(height: 24),
+                          
+                          // Third row - Savings and Transactions
+                          ResponsiveRow(
+                            children: [
+                              SavingsGoalsOverview(userId: _user!.id),
+                              RecentTransactions(userId: _user!.id),
+                            ],
+                          ),
                         ],
                       ),
                     ),
                   ),
-                  actions: [
-                    IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                      onPressed: () => Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const NotificationPage()),
-                      ),
-                    ),
-                  ],
                 ),
-                if (_user != null) ...[                  
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: const EdgeInsets.all(20),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          AccountBalanceCard(user: _user!),
-                          const SizedBox(height: 20),
-                          QuickActions(onActionSelected: _handleQuickAction, userId: _user!.id),
-                          const SizedBox(height: 20),
-                          SpendingInsights(userId: _user!.id),
-                          const SizedBox(height: 20),
-                          BudgetOverview(userId: _user!.id),
-                          const SizedBox(height: 20),
-                          SavingsGoalsOverview(userId: _user!.id),
-                          const SizedBox(height: 20),
-                          RecentTransactions(userId: _user!.id),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
               ],
+            ],
+          ),
+        );
+
+    // Use ResponsiveLayout to switch between layouts based on screen size
+    final responsiveContent = ResponsiveLayout(
+      mobile: mobileLayout,
+      desktop: webLayout,
+    );
+
+    if (isWeb) {
+      return ResponsiveScaffold(
+        title: 'Dashboard',
+        currentIndex: _currentIndex,
+        onNavItemTapped: _handleNavigation,
+        showBottomNavigationBar: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const NotificationPage()),
             ),
           ),
-      bottomNavigationBar: BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _handleNavigation,
-      ),
-    );
+        ],
+        body: responsiveContent,
+      );
+    } else {
+      return Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: responsiveContent,
+        bottomNavigationBar: BottomNavBar(
+          currentIndex: _currentIndex,
+          onTap: _handleNavigation,
+        ),
+      );
+    }
   }
+  
   void _handleQuickAction(String action) {
     switch (action) {
       case 'scan':
